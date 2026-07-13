@@ -1,16 +1,21 @@
 # DeepSWE score chart
 
-A 3D Seaborn/Matplotlib view of the complete DeepSWE v1.1 leaderboard: average task cost on the x-axis, DeepSWE score on the y-axis, and effective output throughput on the z-axis. Every model/effort result is a true `(x, y, z)` point, and points from the same model are connected through 3D space.
+A 3D Seaborn/Matplotlib view of selected DeepSWE v1.1 leaderboard models: average task cost on the x-axis, DeepSWE score on the y-axis, and measured API streaming throughput on the z-axis. Every model/effort result is a true `(x, y, z)` point, and points from the same model are connected through 3D space.
 
 Generate the chart with:
 
 ```sh
+cp .env.example .env
+# Add your Artificial Analysis key to .env
 uv run deepswe-score-chart.py
 ```
 
-The image is written to `deepswe-score-chart.png`.
+The script writes two images:
 
-The script downloads the current [DeepSWE v1.1 leaderboard data](https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json) when it runs. Effective throughput is calculated as `mean_output_tokens / mean_duration_seconds`, so it describes the complete coding-agent run rather than raw API streaming speed.
+- `deepswe-score-chart.png` — 3D cost, score, and throughput
+- `deepswe-cost-vs-speed-chart.png` — 2D cost versus throughput
+
+The script downloads cost and score from the current [DeepSWE v1.1 leaderboard](https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json). It retrieves median streaming output tokens per second from the [Artificial Analysis API](https://artificialanalysis.ai/data-api/docs). Artificial Analysis attribution is required by its API terms.
 
 To also open it in a desktop window:
 

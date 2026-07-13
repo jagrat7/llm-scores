@@ -1,0 +1,6 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+deepswe-score-chart.png
+deepswe-cost-vs-speed-chart.png
