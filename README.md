@@ -22,3 +22,4 @@ To also open it in a desktop window:
 ```sh
 uv run deepswe-score-chart.py --show
 ```
+# llm-scores
