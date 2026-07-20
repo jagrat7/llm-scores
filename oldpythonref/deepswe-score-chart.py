@@ -1,11 +1,13 @@
 import argparse
 import json
+from logging import getLevelNamesMapping
 import os
 from collections import defaultdict
 from pathlib import Path
 from urllib.request import Request, urlopen
 
 import matplotlib.pyplot as plt
+from numpy.ma.core import get_mask
 import seaborn as sns
 from dotenv import load_dotenv
 from matplotlib.colors import to_rgb
@@ -24,10 +26,13 @@ MUTED_TEXT_COLOR = "#a3a3a3"
 EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2, "xhigh": 3, "max": 4}
 MODEL_LABELS = {
     "gpt-5-6-sol": "GPT-5.6 Sol",
+    "gpt-5-6-terra": "GPT-5.6 Terra",
     "claude-fable-5": "Claude Fable 5",
     "claude-opus-4-8": "Claude Opus 4.8",
-    "claude-sonnet-5": "Claude Sonnet 5",
+    # "claude-sonnet-5": "Claude Sonnet 5",
     "kimi-k2-7-code": "Kimi K2.7",
+    "glm-5-2": "GLM-5.2",
+    "grok-4-5": "Grok 4.5",
 }
 
 
@@ -123,7 +128,7 @@ def main():
     max_cost = max(point["cost"] for point in all_points)
     max_score = max(point["score"] for point in all_points)
     max_throughput = max(point["throughput"] for point in all_points)
-    ax.set_xlim(max_cost * 1.08, 0)
+    ax.set_xlim(0, max_cost * 1.08)
     ax.set_ylim(0, max_score * 1.08)
     ax.set_zlim(0, max_throughput * 1.1)
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:.0f}" if value else "$0"))
@@ -202,7 +207,7 @@ def main():
                 fontweight="bold",
             )
 
-    speed_ax.set_xlim(max_cost * 1.08, 0)
+    speed_ax.set_xlim(0, max_cost * 1.08)
     speed_ax.set_ylim(0, max_throughput * 1.1)
     speed_ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:.0f}" if value else "$0"))
     speed_ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:.0f}"))
