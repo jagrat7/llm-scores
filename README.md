@@ -146,6 +146,18 @@ It is the same process as [Neon Launchpad](https://neon.new).
 > [!IMPORTANT]  
 > Claimable databases expire in 72 hours.
 
+## Setting up Upstash Redis
+
+1. Create a free Redis database in the [Upstash console](https://console.upstash.com/)
+2. Copy its REST URL and token into `.env.local`:
+
+```bash
+UPSTASH_REDIS_REST_URL=https://your-database.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token
+```
+
+Visit `/demo/upstash` to store, read, and clear a sample benchmark cache entry.
+
 
 
 ## Routing

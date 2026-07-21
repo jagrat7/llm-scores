@@ -86,6 +86,12 @@ export default function Header() {
               >
                 Neon
               </a>
+              <a
+                href="/demo/upstash"
+                className="block rounded-lg px-3 py-2 text-sm text-[var(--sea-ink-soft)] no-underline transition hover:bg-[var(--link-bg-hover)] hover:text-[var(--sea-ink)]"
+              >
+                Upstash Redis
+              </a>
             </div>
           </details>
         </div>
