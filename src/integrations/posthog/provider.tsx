@@ -1,20 +1,16 @@
-import posthog from 'posthog-js'
-import { PostHogProvider as BasePostHogProvider } from '@posthog/react'
+import { lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
 
-if (typeof window !== 'undefined' && import.meta.env.VITE_POSTHOG_KEY) {
-  posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
-    api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
-    person_profiles: 'identified_only',
-    capture_pageview: false,
-    defaults: '2025-11-30',
-  })
-}
+const ClientPostHogProvider = lazy(() => import('./client-provider'))
 
-interface PostHogProviderProps {
+export default function PostHogProvider({
+  children,
+}: {
   children: ReactNode
-}
-
-export default function PostHogProvider({ children }: PostHogProviderProps) {
-  return <BasePostHogProvider client={posthog}>{children}</BasePostHogProvider>
+}) {
+  return (
+    <Suspense fallback={children}>
+      <ClientPostHogProvider>{children}</ClientPostHogProvider>
+    </Suspense>
+  )
 }

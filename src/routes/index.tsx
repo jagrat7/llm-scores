@@ -1,87 +1,150 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { ArrowLeftRight } from 'lucide-react'
+import { lazy, Suspense } from 'react'
+import { z } from 'zod'
+import { ChartSkeleton } from '#/components/chart-skeleton'
+import { DataState } from '#/components/data-state'
+import { MetricSelect } from '#/components/metric-select'
+import { ModelPicker } from '#/components/model-picker'
+import { PageShell } from '#/components/page-shell'
+import { SourceFooter } from '#/components/source-attribution'
+import { DEFAULT_MODEL_SLUGS } from '#/config/models'
+import {
+  INTERACTIVE_SURFACE_CLASS,
+  MOBILE_TOUCH_TARGET_CLASS,
+} from '#/lib/interaction-styles'
+import { CHART_HEIGHT_CLASS } from '#/lib/layout-styles'
+import { METRICS } from '#/lib/metrics'
+import { orpc } from '#/orpc/client'
 
-export const Route = createFileRoute('/')({ component: App })
+const ComparisonChart = lazy(() =>
+  import('#/components/comparison-chart').then((module) => ({
+    default: module.ComparisonChart,
+  })),
+)
 
-function App() {
+const metricSchema = z.enum(METRICS)
+const compareSearchSchema = z.object({
+  x: metricSchema.catch('cost').default('cost'),
+  y: metricSchema.catch('score').default('score'),
+  models: z
+    .preprocess(
+      (value) => (typeof value === 'string' ? [value] : value),
+      z.array(z.string()).default(DEFAULT_MODEL_SLUGS),
+    )
+    .catch(DEFAULT_MODEL_SLUGS),
+})
+
+export const Route = createFileRoute('/')({
+  validateSearch: (search) => compareSearchSchema.parse(search),
+  component: ComparePage,
+})
+
+function ComparePage() {
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const { data, isPending, isError } = useQuery(
+    orpc.models.list.queryOptions({ input: {} }),
+  )
+
+  function updateSearch(update: Partial<typeof search>) {
+    navigate({
+      search: (previous) => ({ ...previous, ...update }),
+      replace: true,
+    })
+  }
+
+  const selectedSlugs = new Set(search.models)
+  const selectedModels =
+    data?.models.filter((model) => selectedSlugs.has(model.slug)) ?? []
+  const controlsDisabled = isPending ? true : isError
+
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-3">TanStack Start Base Template</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
-          Start simple, ship quickly.
-        </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          This base starter intentionally keeps things light: two routes, clean
-          structure, and the essentials you need to build from scratch.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/about"
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
-          >
-            About This Starter
-          </a>
-          <a
-            href="https://tanstack.com/router"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-[rgba(23,58,64,0.2)] bg-white/50 px-5 py-2.5 text-sm font-semibold text-[var(--sea-ink)] no-underline transition hover:-translate-y-0.5 hover:border-[rgba(23,58,64,0.35)]"
-          >
-            Router Guide
-          </a>
-        </div>
-      </section>
+    <PageShell className="pb-6 pt-4">
+      <h1 className="sr-only">Compare language models</h1>
+      <div className="mb-3 flex flex-wrap items-center gap-2 sm:pl-20 sm:pr-10">
+        <MetricSelect
+          axis="X"
+          value={search.x}
+          onChange={(x) => updateSearch({ x })}
+          disabled={controlsDisabled}
+        />
+        <button
+          type="button"
+          onClick={() => updateSearch({ x: search.y, y: search.x })}
+          className={`inline-flex w-11 items-center justify-center rounded-md text-muted-foreground sm:w-8 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+          aria-label="Swap chart axes"
+          title="Swap axes"
+          disabled={controlsDisabled}
+        >
+          <ArrowLeftRight aria-hidden="true" className="h-3.5 w-3.5" />
+        </button>
+        <MetricSelect
+          axis="Y"
+          value={search.y}
+          onChange={(y) => updateSearch({ y })}
+          disabled={controlsDisabled}
+        />
+        <ModelPicker
+          models={data?.models ?? []}
+          selected={search.models}
+          onChange={(models) => updateSearch({ models })}
+          disabled={controlsDisabled}
+        />
+      </div>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            'Type-Safe Routing',
-            'Routes and links stay in sync across every page.',
-          ],
-          [
-            'Server Functions',
-            'Call server code from your UI without creating API boilerplate.',
-          ],
-          [
-            'Streaming by Default',
-            'Ship progressively rendered responses for faster experiences.',
-          ],
-          [
-            'Tailwind Native',
-            'Design quickly with utility-first styling and reusable tokens.',
-          ],
-        ].map(([title, desc], index) => (
-          <article
-            key={title}
-            className="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ animationDelay: `${index * 90 + 80}ms` }}
-          >
-            <h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
-            </h2>
-            <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
-          </article>
-        ))}
-      </section>
+      {isPending ? <ChartSkeleton /> : null}
+      {isError ? (
+        <DataState
+          className={CHART_HEIGHT_CLASS}
+          tone="error"
+        >
+          Unable to load model data
+        </DataState>
+      ) : null}
+      {data && search.models.length === 0 ? (
+        <DataState className={CHART_HEIGHT_CLASS}>
+          <p>Select models to compare</p>
+          <ModelPicker
+            models={data.models}
+            selected={search.models}
+            onChange={(models) => updateSearch({ models })}
+            align="center"
+          />
+        </DataState>
+      ) : null}
+      {data && search.models.length > 0 && selectedModels.length === 0 ? (
+        <DataState className={CHART_HEIGHT_CLASS}>
+          <p>No selected models are available</p>
+          <ModelPicker
+            models={data.models}
+            selected={search.models}
+            onChange={(models) => updateSearch({ models })}
+            align="center"
+          />
+        </DataState>
+      ) : null}
+      {data && selectedModels.length > 0 ? (
+        <Suspense fallback={<ChartSkeleton />}>
+          <ComparisonChart
+            models={selectedModels}
+            xMetric={search.x}
+            yMetric={search.y}
+          />
+        </Suspense>
+      ) : null}
 
-      <section className="island-shell mt-8 rounded-2xl p-6">
-        <p className="island-kicker mb-2">Quick Start</p>
-        <ul className="m-0 list-disc space-y-2 pl-5 text-sm text-[var(--sea-ink-soft)]">
-          <li>
-            Edit <code>src/routes/index.tsx</code> to customize the home page.
-          </li>
-          <li>
-            Update <code>src/components/Header.tsx</code> and{' '}
-            <code>src/components/Footer.tsx</code> for brand links.
-          </li>
-          <li>
-            Add routes in <code>src/routes</code> and tweak visual tokens in{' '}
-            <code>src/styles.css</code>.
-          </li>
-        </ul>
-      </section>
-    </main>
+      {data ? (
+        <SourceFooter data={data}>
+          <Link
+            to="/leaderboard"
+            className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline decoration-border underline-offset-2 transition-colors duration-200 ease-out hover:text-foreground active:text-foreground sm:min-h-6 sm:text-xs"
+          >
+            View data table
+          </Link>
+        </SourceFooter>
+      ) : null}
+    </PageShell>
   )
 }

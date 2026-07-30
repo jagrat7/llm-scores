@@ -10,16 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as Graph3dRouteImport } from './routes/graph-3d'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
-import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
-import { Route as DemoDrizzleRouteImport } from './routes/demo/drizzle'
-import { Route as DemoNeonRouteImport } from './routes/demo/neon'
-import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
-import { Route as DemoPosthogRouteImport } from './routes/demo/posthog'
-import { Route as DemoTableRouteImport } from './routes/demo/table'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as DemoUpstashRouteImport } from './routes/demo/upstash'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -27,54 +20,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const Graph3dRoute = Graph3dRouteImport.update({
+  id: '/graph-3d',
+  path: '/graph-3d',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoClerkRoute = DemoClerkRouteImport.update({
-  id: '/demo/clerk',
-  path: '/demo/clerk',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoDrizzleRoute = DemoDrizzleRouteImport.update({
-  id: '/demo/drizzle',
-  path: '/demo/drizzle',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoNeonRoute = DemoNeonRouteImport.update({
-  id: '/demo/neon',
-  path: '/demo/neon',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoOrpcTodoRoute = DemoOrpcTodoRouteImport.update({
-  id: '/demo/orpc-todo',
-  path: '/demo/orpc-todo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoPosthogRoute = DemoPosthogRouteImport.update({
-  id: '/demo/posthog',
-  path: '/demo/posthog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTableRoute = DemoTableRouteImport.update({
-  id: '/demo/table',
-  path: '/demo/table',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoUpstashRoute = DemoUpstashRouteImport.update({
-  id: '/demo/upstash',
-  path: '/demo/upstash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
@@ -85,104 +43,39 @@ const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/graph-3d': typeof Graph3dRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/api/$': typeof ApiSplatRoute
-  '/demo/clerk': typeof DemoClerkRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
-  '/demo/neon': typeof DemoNeonRoute
-  '/demo/orpc-todo': typeof DemoOrpcTodoRoute
-  '/demo/posthog': typeof DemoPosthogRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/upstash': typeof DemoUpstashRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/graph-3d': typeof Graph3dRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/api/$': typeof ApiSplatRoute
-  '/demo/clerk': typeof DemoClerkRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
-  '/demo/neon': typeof DemoNeonRoute
-  '/demo/orpc-todo': typeof DemoOrpcTodoRoute
-  '/demo/posthog': typeof DemoPosthogRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/upstash': typeof DemoUpstashRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/graph-3d': typeof Graph3dRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/api/$': typeof ApiSplatRoute
-  '/demo/clerk': typeof DemoClerkRoute
-  '/demo/drizzle': typeof DemoDrizzleRoute
-  '/demo/neon': typeof DemoNeonRoute
-  '/demo/orpc-todo': typeof DemoOrpcTodoRoute
-  '/demo/posthog': typeof DemoPosthogRoute
-  '/demo/table': typeof DemoTableRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/upstash': typeof DemoUpstashRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/about'
-    | '/api/$'
-    | '/demo/clerk'
-    | '/demo/drizzle'
-    | '/demo/neon'
-    | '/demo/orpc-todo'
-    | '/demo/posthog'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/demo/upstash'
-    | '/api/rpc/$'
+  fullPaths: '/' | '/graph-3d' | '/leaderboard' | '/api/$' | '/api/rpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/about'
-    | '/api/$'
-    | '/demo/clerk'
-    | '/demo/drizzle'
-    | '/demo/neon'
-    | '/demo/orpc-todo'
-    | '/demo/posthog'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/demo/upstash'
-    | '/api/rpc/$'
-  id:
-    | '__root__'
-    | '/'
-    | '/about'
-    | '/api/$'
-    | '/demo/clerk'
-    | '/demo/drizzle'
-    | '/demo/neon'
-    | '/demo/orpc-todo'
-    | '/demo/posthog'
-    | '/demo/table'
-    | '/demo/tanstack-query'
-    | '/demo/upstash'
-    | '/api/rpc/$'
+  to: '/' | '/graph-3d' | '/leaderboard' | '/api/$' | '/api/rpc/$'
+  id: '__root__' | '/' | '/graph-3d' | '/leaderboard' | '/api/$' | '/api/rpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
+  Graph3dRoute: typeof Graph3dRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   ApiSplatRoute: typeof ApiSplatRoute
-  DemoClerkRoute: typeof DemoClerkRoute
-  DemoDrizzleRoute: typeof DemoDrizzleRoute
-  DemoNeonRoute: typeof DemoNeonRoute
-  DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
-  DemoPosthogRoute: typeof DemoPosthogRoute
-  DemoTableRoute: typeof DemoTableRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
-  DemoUpstashRoute: typeof DemoUpstashRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
 }
 
@@ -195,11 +88,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/graph-3d': {
+      id: '/graph-3d'
+      path: '/graph-3d'
+      fullPath: '/graph-3d'
+      preLoaderRoute: typeof Graph3dRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/$': {
@@ -207,62 +107,6 @@ declare module '@tanstack/react-router' {
       path: '/api/$'
       fullPath: '/api/$'
       preLoaderRoute: typeof ApiSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/clerk': {
-      id: '/demo/clerk'
-      path: '/demo/clerk'
-      fullPath: '/demo/clerk'
-      preLoaderRoute: typeof DemoClerkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/drizzle': {
-      id: '/demo/drizzle'
-      path: '/demo/drizzle'
-      fullPath: '/demo/drizzle'
-      preLoaderRoute: typeof DemoDrizzleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/neon': {
-      id: '/demo/neon'
-      path: '/demo/neon'
-      fullPath: '/demo/neon'
-      preLoaderRoute: typeof DemoNeonRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/orpc-todo': {
-      id: '/demo/orpc-todo'
-      path: '/demo/orpc-todo'
-      fullPath: '/demo/orpc-todo'
-      preLoaderRoute: typeof DemoOrpcTodoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/posthog': {
-      id: '/demo/posthog'
-      path: '/demo/posthog'
-      fullPath: '/demo/posthog'
-      preLoaderRoute: typeof DemoPosthogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/table': {
-      id: '/demo/table'
-      path: '/demo/table'
-      fullPath: '/demo/table'
-      preLoaderRoute: typeof DemoTableRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/upstash': {
-      id: '/demo/upstash'
-      path: '/demo/upstash'
-      fullPath: '/demo/upstash'
-      preLoaderRoute: typeof DemoUpstashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/rpc/$': {
@@ -277,16 +121,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
+  Graph3dRoute: Graph3dRoute,
+  LeaderboardRoute: LeaderboardRoute,
   ApiSplatRoute: ApiSplatRoute,
-  DemoClerkRoute: DemoClerkRoute,
-  DemoDrizzleRoute: DemoDrizzleRoute,
-  DemoNeonRoute: DemoNeonRoute,
-  DemoOrpcTodoRoute: DemoOrpcTodoRoute,
-  DemoPosthogRoute: DemoPosthogRoute,
-  DemoTableRoute: DemoTableRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
-  DemoUpstashRoute: DemoUpstashRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,6 +1,7 @@
-import { addTodo, listTodos } from './todos'
+import { listModelsProcedure } from './models'
 
 export default {
-  listTodos,
-  addTodo,
+  models: {
+    list: listModelsProcedure,
+  },
 }
