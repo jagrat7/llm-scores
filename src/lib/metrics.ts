@@ -45,17 +45,13 @@ export function formatMetric(value: number | null, metric: Metric) {
     const remainingSeconds = totalSeconds % 60
 
     if (totalSeconds < 3600) {
-      return remainingSeconds === 0
-        ? `${totalMinutes}m`
-        : `${totalMinutes}m ${remainingSeconds}s`
+      return remainingSeconds === 0 ? `${totalMinutes}m` : `${totalMinutes}m ${remainingSeconds}s`
     }
 
     const hours = Math.floor(totalMinutes / 60)
     const remainingMinutes = totalMinutes % 60
 
-    return remainingMinutes === 0
-      ? `${hours}h`
-      : `${hours}h ${remainingMinutes}m`
+    return remainingMinutes === 0 ? `${hours}h` : `${hours}h ${remainingMinutes}m`
   }
 
   if (metric === 'score') {
@@ -76,10 +72,7 @@ export function formatMetric(value: number | null, metric: Metric) {
 }
 
 export function formatRelativeTime(isoDate: string) {
-  const seconds = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000),
-  )
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000))
 
   if (seconds < 60) return 'just now'
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`

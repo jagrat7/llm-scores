@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import type { SortingState } from '@tanstack/react-table'
+
 import {
   createColumnHelper,
   flexRender,
@@ -7,13 +7,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { FAMILY_CHART_COLORS } from '#/config/models'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { useMemo, useState } from 'react'
+
+import type { JoinedModel } from '#/shared/models'
+
+import { FAMILY_CHART_COLORS } from '#/shared/model-config'
 import { INTERACTIVE_SURFACE_CLASS } from '#/lib/interaction-styles'
 import { TABLE_WIDTH_CLASS } from '#/lib/layout-styles'
 import { formatMetric } from '#/lib/metrics'
 import { cn } from '#/lib/utils'
-import type { JoinedModel } from '#/lib/model-data'
-import type { SortingState } from '@tanstack/react-table'
 
 const columnHelper = createColumnHelper<JoinedModel>()
 const RIGHT_ALIGNED_COLUMN_IDS = new Set([
@@ -33,26 +36,19 @@ function sourceLabel(model: JoinedModel) {
 }
 
 export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'score', desc: true },
-  ])
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'score', desc: true }])
   const columns = useMemo(
     () => [
       columnHelper.accessor('displayName', {
         header: 'Model',
         cell: ({ row, getValue }) => {
-          const effortLabel =
-            row.original.effort === 'default'
-              ? ''
-              : ` [${row.original.effort}]`
+          const effortLabel = row.original.effort === 'default' ? '' : ` [${row.original.effort}]`
           const modelLabel = `${getValue()}${effortLabel}`
 
           return (
             <div className="w-48 max-w-48" title={modelLabel}>
               <div className="truncate">
-                <span className="font-medium text-foreground">
-                  {getValue()}
-                </span>
+                <span className="font-medium text-foreground">{getValue()}</span>
                 {effortLabel ? (
                   <span className="ml-1.5 text-sm text-muted-foreground sm:text-xs">
                     {effortLabel.trim()}
@@ -76,8 +72,7 @@ export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
                   className="block h-full origin-left rounded-full transition-transform duration-200 ease-out"
                   style={{
                     transform: `scaleX(${Math.max(0, Math.min(100, score ?? 0)) / 100})`,
-                    backgroundColor:
-                      FAMILY_CHART_COLORS[row.original.family],
+                    backgroundColor: FAMILY_CHART_COLORS[row.original.family],
                   }}
                 />
               </span>
@@ -134,9 +129,7 @@ export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
       className="overflow-x-auto border-y border-border lg:overflow-x-visible"
       data-table-frame="loaded"
     >
-      <table
-        className={`${TABLE_WIDTH_CLASS} border-collapse text-left text-sm tabular-nums`}
-      >
+      <table className={`${TABLE_WIDTH_CLASS} border-collapse text-left text-sm tabular-nums`}>
         <thead className="bg-background lg:sticky lg:top-12 lg:z-20">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b border-border">
@@ -145,11 +138,7 @@ export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
                 const canSort = header.column.getCanSort()
                 const rightAligned = RIGHT_ALIGNED_COLUMN_IDS.has(header.id)
                 const SortIcon =
-                  sorted === 'asc'
-                    ? ArrowUp
-                    : sorted === 'desc'
-                      ? ArrowDown
-                      : ArrowUpDown
+                  sorted === 'asc' ? ArrowUp : sorted === 'desc' ? ArrowDown : ArrowUpDown
 
                 return (
                   <th
@@ -165,11 +154,9 @@ export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
                             : undefined
                     }
                     className={cn(
-                      'h-11 whitespace-nowrap px-3 text-sm font-medium text-muted-foreground sm:h-10 sm:text-xs',
+                      'h-11 px-3 text-sm font-medium whitespace-nowrap text-muted-foreground sm:h-10 sm:text-xs',
                       rightAligned ? 'text-right' : null,
-                      index === 0
-                        ? 'sticky left-0 z-30 bg-background lg:static'
-                        : null,
+                      index === 0 ? 'sticky left-0 z-30 bg-background lg:static' : null,
                     )}
                   >
                     {canSort ? (
@@ -183,17 +170,11 @@ export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
                           INTERACTIVE_SURFACE_CLASS,
                         )}
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                         <SortIcon aria-hidden="true" className="h-3 w-3" />
                       </button>
                     ) : (
-                      flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )
+                      flexRender(header.column.columnDef.header, header.getContext())
                     )}
                   </th>
                 )
@@ -211,10 +192,8 @@ export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
                 <td
                   key={cell.id}
                   className={cn(
-                    'h-11 whitespace-nowrap px-3 text-foreground',
-                    RIGHT_ALIGNED_COLUMN_IDS.has(cell.column.id)
-                      ? 'text-right'
-                      : null,
+                    'h-11 px-3 whitespace-nowrap text-foreground',
+                    RIGHT_ALIGNED_COLUMN_IDS.has(cell.column.id) ? 'text-right' : null,
                     index === 0
                       ? 'sticky left-0 z-10 bg-background transition-colors duration-200 ease-out group-hover:bg-muted/60 lg:static'
                       : null,

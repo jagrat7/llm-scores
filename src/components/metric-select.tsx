@@ -1,3 +1,5 @@
+import type { Metric } from '#/lib/metrics'
+
 import {
   Select,
   SelectContent,
@@ -5,12 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#/components/ui/select'
-import {
-  INTERACTIVE_SURFACE_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-} from '#/lib/interaction-styles'
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
 import { METRICS, METRIC_CONFIG } from '#/lib/metrics'
-import type { Metric } from '#/lib/metrics'
 
 export function MetricSelect({
   axis,
@@ -34,7 +32,7 @@ export function MetricSelect({
       <SelectTrigger
         size="sm"
         aria-label={label}
-        className={`gap-2 bg-background px-2.5 text-sm text-muted-foreground shadow-none focus-visible:outline-none dark:bg-background dark:hover:bg-muted sm:text-xs ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+        className={`gap-2 bg-background px-2.5 text-sm text-muted-foreground shadow-none focus-visible:outline-none sm:text-xs dark:bg-background dark:hover:bg-muted ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
       >
         <span aria-hidden="true">{axis}</span>
         <span className="sr-only">{label}</span>
@@ -46,11 +44,7 @@ export function MetricSelect({
         className="duration-200 ease-out motion-reduce:animate-none"
       >
         {METRICS.map((metric) => (
-          <SelectItem
-            key={metric}
-            value={metric}
-            className={MOBILE_TOUCH_TARGET_CLASS}
-          >
+          <SelectItem key={metric} value={metric} className={MOBILE_TOUCH_TARGET_CLASS}>
             {METRIC_CONFIG[metric].shortLabel}
           </SelectItem>
         ))}

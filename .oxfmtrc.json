@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "sortTailwindcss": true,
+  "sortPackageJson": true,
+  "ignorePatterns": [
+    "node_modules/**",
+    ".output/**",
+    ".tanstack/**",
+    ".nitro/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".impeccable/**",
+    ".venv/**",
+    "dist/**",
+    "oldpythonref/**",
+    "public/**",
+    "src/routeTree.gen.ts",
+    "**/*.gen.ts",
+    "bun.lock"
+  ]
+}

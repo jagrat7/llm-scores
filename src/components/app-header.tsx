@@ -1,16 +1,13 @@
 import { Link } from '@tanstack/react-router'
-import { DEFAULT_MODEL_SLUGS } from '#/config/models'
-import {
-  INTERACTIVE_SURFACE_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-} from '#/lib/interaction-styles'
+
+import { DEFAULT_MODEL_SLUGS } from '#/shared/model-config'
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
 import { CONTENT_WIDTH_CLASS } from '#/lib/layout-styles'
+
 import ThemeToggle from './theme-toggle'
 
-const NAV_LINK_CLASS =
-  `inline-flex items-center rounded-md px-2 text-sm text-muted-foreground sm:px-2.5 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
-const WORDMARK_CLASS =
-  `mr-1 inline-flex items-center rounded-sm px-0.5 text-sm font-semibold tracking-tight text-foreground no-underline sm:mr-4 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
+const NAV_LINK_CLASS = `inline-flex items-center rounded-md px-2 text-sm text-muted-foreground sm:px-2.5 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
+const WORDMARK_CLASS = `mr-1 inline-flex items-center rounded-sm px-0.5 text-sm font-semibold tracking-tight text-foreground no-underline sm:mr-4 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
 
 export default function AppHeader() {
   return (

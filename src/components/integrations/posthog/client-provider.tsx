@@ -1,6 +1,7 @@
-import posthog from 'posthog-js'
-import { PostHogProvider } from '@posthog/react'
 import type { ReactNode } from 'react'
+
+import { PostHogProvider } from '@posthog/react'
+import posthog from 'posthog-js'
 
 if (typeof window !== 'undefined' && import.meta.env.VITE_POSTHOG_KEY) {
   posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
@@ -11,10 +12,6 @@ if (typeof window !== 'undefined' && import.meta.env.VITE_POSTHOG_KEY) {
   })
 }
 
-export default function ClientPostHogProvider({
-  children,
-}: {
-  children: ReactNode
-}) {
+export default function ClientPostHogProvider({ children }: { children: ReactNode }) {
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>
 }

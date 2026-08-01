@@ -11,11 +11,7 @@ const ClerkProvider = lazy(() =>
   })),
 )
 
-export default function AppClerkProvider({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AppClerkProvider({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={children}>
       <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">

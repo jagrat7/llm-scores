@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { joinModelData } from './model-data'
+
+import { joinModelData } from './models'
 
 describe('joinModelData', () => {
   it('matches effort-specific Artificial Analysis slugs before base slugs', () => {

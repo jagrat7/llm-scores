@@ -1,10 +1,12 @@
 import { z } from 'zod'
-import { EFFORT_ORDER, getModelConfig } from '#/config/models'
-import { env } from '#/env'
-import { getRedis } from '#/lib/upstash'
 
-const DEEPSWE_URL =
-  'https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json'
+import { EFFORT_ORDER, getModelConfig } from '#/shared/model-config'
+import { env } from '#/env'
+import type { JoinedModel, ModelsResponse, SourceStatus } from '#/shared/models'
+
+import { getRedis } from '#/server/services/cache'
+
+const DEEPSWE_URL = 'https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json'
 const AA_URL = 'https://artificialanalysis.ai/api/v2/language/models/free'
 const CACHE_TTL_SECONDS = 60 * 60
 const STALE_TTL_SECONDS = 24 * 60 * 60
@@ -52,9 +54,6 @@ const aaPayloadSchema = z.object({
 
 type DeepSWEData = z.infer<typeof deepswePayloadSchema>
 type AAModel = z.infer<typeof aaModelSchema>
-type SourceName = 'deepswe' | 'artificialAnalysis'
-type SourceStatus = 'ok' | 'error'
-type MetricSource = 'DeepSWE' | 'Artificial Analysis' | null
 
 type CacheEntry<T> = {
   data: T
@@ -64,30 +63,6 @@ type CacheEntry<T> = {
 type SourceResult<T> = CacheEntry<T> & {
   fromCache: boolean
   status: SourceStatus
-}
-
-export type JoinedModel = {
-  slug: string
-  displayName: string
-  family: ReturnType<typeof getModelConfig>['family']
-  effort: string
-  score: number | null
-  costPerMTokens: number | null
-  tokensPerSecond: number | null
-  durationSeconds: number | null
-  sources: {
-    score: MetricSource
-    costPerMTokens: MetricSource
-    tokensPerSecond: MetricSource
-    durationSeconds: MetricSource
-  }
-}
-
-export type ModelsResponse = {
-  models: Array<JoinedModel>
-  fetchedAt: string
-  cacheAgeSeconds: number | null
-  sources: Record<SourceName, SourceStatus>
 }
 
 function getBlendedPrice(model: AAModel | undefined) {
@@ -104,27 +79,20 @@ function getBlendedPrice(model: AAModel | undefined) {
 
 function getDeepSWECostPerMTokens(row: z.infer<typeof deepsweRowSchema>) {
   const cost = row.mean_cost_usd
-  const tokens =
-    (row.mean_input_tokens ?? 0) + (row.mean_output_tokens ?? 0)
+  const tokens = (row.mean_input_tokens ?? 0) + (row.mean_output_tokens ?? 0)
 
   return cost != null && tokens > 0 ? (cost / tokens) * 1_000_000 : null
 }
 
-export function joinModelData(
-  deepswe: DeepSWEData | null,
-  aaModels: Array<AAModel>,
-) {
+export function joinModelData(deepswe: DeepSWEData | null, aaModels: Array<AAModel>) {
   if (!deepswe) {
     return aaModels.map((model): JoinedModel => {
       const effortMatch = model.slug.match(/-(low|medium|high|xhigh|max)$/)
       const effort = effortMatch?.[1] ?? 'default'
-      const baseSlug = effortMatch
-        ? model.slug.slice(0, -effortMatch[0].length)
-        : model.slug
+      const baseSlug = effortMatch ? model.slug.slice(0, -effortMatch[0].length) : model.slug
       const config = getModelConfig(baseSlug)
       const costPerMTokens = getBlendedPrice(model)
-      const tokensPerSecond =
-        model.performance?.median_output_tokens_per_second ?? null
+      const tokensPerSecond = model.performance?.median_output_tokens_per_second ?? null
 
       return {
         slug: baseSlug,
@@ -137,10 +105,8 @@ export function joinModelData(
         durationSeconds: null,
         sources: {
           score: null,
-          costPerMTokens:
-            costPerMTokens == null ? null : 'Artificial Analysis',
-          tokensPerSecond:
-            tokensPerSecond == null ? null : 'Artificial Analysis',
+          costPerMTokens: costPerMTokens == null ? null : 'Artificial Analysis',
+          tokensPerSecond: tokensPerSecond == null ? null : 'Artificial Analysis',
           durationSeconds: null,
         },
       }
@@ -152,17 +118,12 @@ export function joinModelData(
   return deepswe.rows
     .map((row): JoinedModel => {
       const effort = row.reasoning_effort ?? 'default'
-      const effortSlug =
-        ['default', 'max'].includes(effort)
-          ? row.model
-          : `${row.model}-${effort}`
+      const effortSlug = ['default', 'max'].includes(effort) ? row.model : `${row.model}-${effort}`
       const aaModel = aaBySlug.get(effortSlug) ?? aaBySlug.get(row.model)
       const config = getModelConfig(row.model)
       const aaCostPerMTokens = getBlendedPrice(aaModel)
-      const costPerMTokens =
-        aaCostPerMTokens ?? getDeepSWECostPerMTokens(row)
-      const tokensPerSecond =
-        aaModel?.performance?.median_output_tokens_per_second ?? null
+      const costPerMTokens = aaCostPerMTokens ?? getDeepSWECostPerMTokens(row)
+      const tokensPerSecond = aaModel?.performance?.median_output_tokens_per_second ?? null
 
       return {
         slug: row.model,
@@ -181,10 +142,8 @@ export function joinModelData(
               : aaCostPerMTokens == null
                 ? 'DeepSWE'
                 : 'Artificial Analysis',
-          tokensPerSecond:
-            tokensPerSecond == null ? null : 'Artificial Analysis',
-          durationSeconds:
-            row.mean_duration_seconds == null ? null : 'DeepSWE',
+          tokensPerSecond: tokensPerSecond == null ? null : 'Artificial Analysis',
+          durationSeconds: row.mean_duration_seconds == null ? null : 'DeepSWE',
         },
       }
     })
@@ -192,8 +151,7 @@ export function joinModelData(
       const modelOrder = (right.score ?? 0) - (left.score ?? 0)
       return modelOrder !== 0
         ? modelOrder
-        : (EFFORT_ORDER[left.effort] ?? 0) -
-            (EFFORT_ORDER[right.effort] ?? 0)
+        : (EFFORT_ORDER[left.effort] ?? 0) - (EFFORT_ORDER[right.effort] ?? 0)
     })
 }
 
@@ -276,28 +234,18 @@ async function fetchArtificialAnalysis() {
 export async function listModels(): Promise<ModelsResponse> {
   const [deepswe, artificialAnalysis] = await Promise.all([
     fetchCachedSource<DeepSWEData>('llm-scores:deepswe:v1.1', fetchDeepSWE),
-    fetchCachedSource<Array<AAModel>>(
-      'llm-scores:artificial-analysis:v2',
-      fetchArtificialAnalysis,
-    ),
+    fetchCachedSource<Array<AAModel>>('llm-scores:artificial-analysis:v2', fetchArtificialAnalysis),
   ])
 
   const sourceEntries = [deepswe, artificialAnalysis]
-  const fetchedTimes = sourceEntries.map((source) =>
-    new Date(source.fetchedAt).getTime(),
-  )
+  const fetchedTimes = sourceEntries.map((source) => new Date(source.fetchedAt).getTime())
   const oldestFetch = Math.min(...fetchedTimes)
   const wasCached = sourceEntries.some((source) => source.fromCache)
 
   return {
-    models: joinModelData(
-      deepswe.data,
-      artificialAnalysis.data ?? [],
-    ),
+    models: joinModelData(deepswe.data, artificialAnalysis.data ?? []),
     fetchedAt: new Date(oldestFetch).toISOString(),
-    cacheAgeSeconds: wasCached
-      ? Math.max(0, Math.floor((Date.now() - oldestFetch) / 1000))
-      : null,
+    cacheAgeSeconds: wasCached ? Math.max(0, Math.floor((Date.now() - oldestFetch) / 1000)) : null,
     sources: {
       deepswe: deepswe.status,
       artificialAnalysis: artificialAnalysis.status,

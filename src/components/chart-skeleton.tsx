@@ -9,18 +9,18 @@ export function ChartSkeleton() {
       aria-label="Loading comparison chart"
       role="status"
     >
-      <div className="absolute bottom-10 left-20 right-10 top-10 overflow-hidden border-b border-l border-border">
+      <div className="absolute top-10 right-10 bottom-10 left-20 overflow-hidden border-b border-l border-border">
         <div className="skeleton-shimmer absolute inset-0 opacity-70" />
         {Array.from({ length: CHART_GRID_LINES }, (_, index) => (
           <div
             key={index}
-            className="absolute left-0 right-0 h-px bg-border"
+            className="absolute right-0 left-0 h-px bg-border"
             style={{ top: `${(index + 1) * 20}%` }}
           />
         ))}
       </div>
       <div className="skeleton-shimmer absolute bottom-2 left-1/2 h-3 w-24 -translate-x-1/2 rounded-sm opacity-70" />
-      <div className="skeleton-shimmer absolute left-2 top-1/2 h-24 w-3 -translate-y-1/2 rounded-sm opacity-70" />
+      <div className="skeleton-shimmer absolute top-1/2 left-2 h-24 w-3 -translate-y-1/2 rounded-sm opacity-70" />
       <span className="sr-only">Loading model data</span>
     </div>
   )
@@ -34,24 +34,14 @@ export function TableSkeleton() {
       role="status"
       className="overflow-x-auto border-y border-border lg:overflow-x-visible"
     >
-      <table
-        aria-hidden="true"
-        className={`${TABLE_WIDTH_CLASS} border-collapse text-sm`}
-      >
+      <table aria-hidden="true" className={`${TABLE_WIDTH_CLASS} border-collapse text-sm`}>
         <thead>
           <tr className="border-b border-border">
-            {['w-40', 'w-40', 'w-20', 'w-20', 'w-20', 'w-16'].map(
-              (width, index) => (
-                <th
-                  key={index}
-                  className="h-11 px-3 text-left sm:h-10"
-                >
-                  <div
-                    className={`skeleton-shimmer h-3 rounded-sm opacity-70 ${width}`}
-                  />
-                </th>
-              ),
-            )}
+            {['w-40', 'w-40', 'w-20', 'w-20', 'w-20', 'w-16'].map((width, index) => (
+              <th key={index} className="h-11 px-3 text-left sm:h-10">
+                <div className={`skeleton-shimmer h-3 rounded-sm opacity-70 ${width}`} />
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>

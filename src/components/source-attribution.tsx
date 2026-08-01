@@ -1,6 +1,8 @@
 import { TriangleAlert } from 'lucide-react'
+
+import type { ModelsResponse } from '#/shared/models'
+
 import { formatRelativeTime } from '#/lib/metrics'
-import type { ModelsResponse } from '#/lib/model-data'
 
 export function SourceAttribution({ data }: { data: ModelsResponse }) {
   const cacheLabel =
@@ -30,23 +32,15 @@ export function SourceAttribution({ data }: { data: ModelsResponse }) {
         Artificial Analysis
       </a>
       <span aria-hidden="true">—</span>
-      <span suppressHydrationWarning>
-        fetched {formatRelativeTime(data.fetchedAt)}
-      </span>
+      <span suppressHydrationWarning>fetched {formatRelativeTime(data.fetchedAt)}</span>
       {cacheLabel ? (
-        <span className="rounded-full border border-border px-2 py-0.5 text-xs">
-          {cacheLabel}
-        </span>
+        <span className="rounded-full border border-border px-2 py-0.5 text-xs">{cacheLabel}</span>
       ) : null}
     </p>
   )
 }
 
-export function SourceNotices({
-  sources,
-}: {
-  sources: ModelsResponse['sources']
-}) {
+export function SourceNotices({ sources }: { sources: ModelsResponse['sources'] }) {
   const notices = [
     sources.deepswe === 'error'
       ? 'DeepSWE unreachable — showing Artificial Analysis data only'
@@ -57,10 +51,7 @@ export function SourceNotices({
   ].filter((notice): notice is string => notice != null)
 
   return notices.length > 0 ? (
-    <div
-      className="flex flex-col gap-1.5 text-sm text-destructive sm:text-xs"
-      role="status"
-    >
+    <div className="flex flex-col gap-1.5 text-sm text-destructive sm:text-xs" role="status">
       {notices.map((notice) => (
         <span key={notice} className="flex items-start gap-2">
           <TriangleAlert

@@ -1,0 +1,60 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "jsPlugins": [
+    {
+      "name": "local",
+      "specifier": "./dev/oxlint/index.mjs"
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules/**",
+    ".output/**",
+    ".tanstack/**",
+    ".nitro/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".impeccable/**",
+    ".venv/**",
+    "dist/**",
+    "oldpythonref/**",
+    "public/**",
+    "src/routeTree.gen.ts",
+    "**/*.gen.ts"
+  ],
+  "rules": {
+    "local/no-server-deep-imports": [
+      "error",
+      {
+        "serverAlias": "#/server",
+        "serverDirectory": "server"
+      }
+    ],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase",
+        "ignore": ["^routeTree\\.gen\\.ts$"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/server/services/**/index.ts", "src/server/services/**/index.tsx"],
+      "rules": {
+        "local/only-service-export": "error"
+      }
+    },
+    {
+      "files": ["src/routes/**/*.{ts,tsx}", "src/lib/orpc-client.ts"],
+      "rules": {
+        "local/no-server-deep-imports": "off"
+      }
+    }
+  ]
+}

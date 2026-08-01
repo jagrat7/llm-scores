@@ -3,20 +3,18 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeftRight } from 'lucide-react'
 import { lazy, Suspense } from 'react'
 import { z } from 'zod'
+
 import { ChartSkeleton } from '#/components/chart-skeleton'
 import { DataState } from '#/components/data-state'
 import { MetricSelect } from '#/components/metric-select'
 import { ModelPicker } from '#/components/model-picker'
 import { PageShell } from '#/components/page-shell'
 import { SourceFooter } from '#/components/source-attribution'
-import { DEFAULT_MODEL_SLUGS } from '#/config/models'
-import {
-  INTERACTIVE_SURFACE_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-} from '#/lib/interaction-styles'
+import { DEFAULT_MODEL_SLUGS } from '#/shared/model-config'
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
 import { CHART_HEIGHT_CLASS } from '#/lib/layout-styles'
 import { METRICS } from '#/lib/metrics'
-import { orpc } from '#/orpc/client'
+import { orpc } from '#/lib/orpc-client'
 
 const ComparisonChart = lazy(() =>
   import('#/components/comparison-chart').then((module) => ({
@@ -44,26 +42,23 @@ export const Route = createFileRoute('/')({
 function ComparePage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, isError } = useQuery(
-    orpc.models.list.queryOptions({ input: {} }),
-  )
+  const { data, isPending, isError } = useQuery(orpc.models.list.queryOptions({ input: {} }))
 
   function updateSearch(update: Partial<typeof search>) {
-    navigate({
+    void navigate({
       search: (previous) => ({ ...previous, ...update }),
       replace: true,
     })
   }
 
   const selectedSlugs = new Set(search.models)
-  const selectedModels =
-    data?.models.filter((model) => selectedSlugs.has(model.slug)) ?? []
+  const selectedModels = data?.models.filter((model) => selectedSlugs.has(model.slug)) ?? []
   const controlsDisabled = isPending ? true : isError
 
   return (
-    <PageShell className="pb-6 pt-4">
+    <PageShell className="pt-4 pb-6">
       <h1 className="sr-only">Compare language models</h1>
-      <div className="mb-3 flex flex-wrap items-center gap-2 sm:pl-20 sm:pr-10">
+      <div className="mb-3 flex flex-wrap items-center gap-2 sm:pr-10 sm:pl-20">
         <MetricSelect
           axis="X"
           value={search.x}
@@ -96,10 +91,7 @@ function ComparePage() {
 
       {isPending ? <ChartSkeleton /> : null}
       {isError ? (
-        <DataState
-          className={CHART_HEIGHT_CLASS}
-          tone="error"
-        >
+        <DataState className={CHART_HEIGHT_CLASS} tone="error">
           Unable to load model data
         </DataState>
       ) : null}
@@ -127,11 +119,7 @@ function ComparePage() {
       ) : null}
       {data && selectedModels.length > 0 ? (
         <Suspense fallback={<ChartSkeleton />}>
-          <ComparisonChart
-            models={selectedModels}
-            xMetric={search.x}
-            yMetric={search.y}
-          />
+          <ComparisonChart models={selectedModels} xMetric={search.x} yMetric={search.y} />
         </Suspense>
       ) : null}
 

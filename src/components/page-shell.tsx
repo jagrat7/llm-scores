@@ -1,5 +1,5 @@
-import { cn } from '#/lib/utils'
 import { CONTENT_WIDTH_CLASS } from '#/lib/layout-styles'
+import { cn } from '#/lib/utils'
 
 export function PageShell({
   children,
@@ -9,13 +9,6 @@ export function PageShell({
   className?: string
 }) {
   return (
-    <main
-      className={cn(
-        `mx-auto px-4 sm:px-6 ${CONTENT_WIDTH_CLASS}`,
-        className,
-      )}
-    >
-      {children}
-    </main>
+    <main className={cn(`mx-auto px-4 sm:px-6 ${CONTENT_WIDTH_CLASS}`, className)}>{children}</main>
   )
 }

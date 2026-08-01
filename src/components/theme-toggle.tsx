@@ -1,9 +1,7 @@
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import {
-  INTERACTIVE_SURFACE_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-} from '#/lib/interaction-styles'
+
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
 
 type ThemeMode = 'system' | 'light' | 'dark'
 
@@ -13,9 +11,7 @@ function getStoredMode(): ThemeMode {
   if (typeof window === 'undefined') return 'system'
 
   const stored = window.localStorage.getItem('theme')
-  return stored && THEME_MODES.includes(stored as ThemeMode)
-    ? (stored as ThemeMode)
-    : 'system'
+  return stored && THEME_MODES.includes(stored as ThemeMode) ? (stored as ThemeMode) : 'system'
 }
 
 function applyTheme(mode: ThemeMode) {

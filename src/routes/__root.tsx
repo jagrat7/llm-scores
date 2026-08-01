@@ -1,21 +1,15 @@
-import {
-  HeadContent,
-  Scripts,
-  createRootRouteWithContext,
-} from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import type { QueryClient } from '@tanstack/react-query'
+
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+
 import AppHeader from '#/components/app-header'
 
-import ClerkProvider from '../integrations/clerk/provider'
-
-import PostHogProvider from '../integrations/posthog/provider'
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
-
+import ClerkProvider from '../components/integrations/clerk/provider'
+import PostHogProvider from '../components/integrations/posthog/provider'
+import TanStackQueryDevtools from '../components/integrations/tanstack-query/devtools'
 import appCss from '../styles.css?url'
-
-import type { QueryClient } from '@tanstack/react-query'
 
 interface MyRouterContext {
   queryClient: QueryClient

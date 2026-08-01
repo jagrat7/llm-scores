@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Rotate3D } from 'lucide-react'
-import { FAMILY_CHART_COLORS } from '#/config/models'
-import {
-  INTERACTIVE_SURFACE_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-} from '#/lib/interaction-styles'
-import { formatMetric, METRIC_CONFIG } from '#/lib/metrics'
-import type { JoinedModel } from '#/lib/model-data'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
 import type { Metric } from '#/lib/metrics'
+import type { JoinedModel } from '#/shared/models'
+
+import { FAMILY_CHART_COLORS } from '#/shared/model-config'
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
+import { formatMetric, METRIC_CONFIG } from '#/lib/metrics'
 
 type Rotation = {
   pitch: number
@@ -80,10 +79,7 @@ const AXIS_ENDPOINTS: Record<AxisName, Coordinate> = {
 }
 const GRID_STEPS = [-0.25, 0, 0.25]
 
-function getProjection(
-  coordinate: Coordinate,
-  rotation: Rotation,
-): ProjectedCoordinate {
+function getProjection(coordinate: Coordinate, rotation: Rotation): ProjectedCoordinate {
   const cosYaw = Math.cos(rotation.yaw)
   const sinYaw = Math.sin(rotation.yaw)
   const cosPitch = Math.cos(rotation.pitch)
@@ -142,19 +138,14 @@ export function ComparisonChart3D({
     const ranges = Object.fromEntries(
       AXES.map((axis) => {
         const values = rawPoints.map((point) => point.values[axis])
-        return [
-          axis,
-          { min: Math.min(...values), max: Math.max(...values) },
-        ]
+        return [axis, { min: Math.min(...values), max: Math.max(...values) }]
       }),
     ) as Record<AxisName, { min: number; max: number }>
 
     return { rawPoints, ranges }
   }, [metrics, models])
   const geometry = useMemo(() => {
-    const projectedVertices = CUBE_VERTICES.map((vertex) =>
-      getProjection(vertex, rotation),
-    )
+    const projectedVertices = CUBE_VERTICES.map((vertex) => getProjection(vertex, rotation))
     const gridLines = GRID_STEPS.flatMap((step) => [
       [
         getProjection({ x: CUBE_MIN, y: CUBE_MIN, z: step }, rotation),
@@ -166,10 +157,7 @@ export function ComparisonChart3D({
       ],
     ])
     const axisLabels = Object.fromEntries(
-      AXES.map((axis) => [
-        axis,
-        getProjection(AXIS_ENDPOINTS[axis], rotation),
-      ]),
+      AXES.map((axis) => [axis, getProjection(AXIS_ENDPOINTS[axis], rotation)]),
     ) as Record<AxisName, ProjectedCoordinate>
     const points = chartData.rawPoints
       .map(({ model, values }): PlotPoint => {
@@ -177,13 +165,11 @@ export function ComparisonChart3D({
           AXES.map((axis) => {
             const range = chartData.ranges[axis]
             const span = range.max - range.min
-            const normalized =
-              span === 0 ? 0.5 : (values[axis] - range.min) / span
+            const normalized = span === 0 ? 0.5 : (values[axis] - range.min) / span
             return [axis, normalized - 0.5]
           }),
         ) as Coordinate
-        const effortLabel =
-          model.effort === 'default' ? '' : ` [${model.effort}]`
+        const effortLabel = model.effort === 'default' ? '' : ` [${model.effort}]`
 
         return {
           ...model,
@@ -199,9 +185,7 @@ export function ComparisonChart3D({
     return { projectedVertices, gridLines, axisLabels, points }
   }, [chartData, rotation])
   const activePoint =
-    geometry.points.find((point) => point.id === activeId) ??
-    geometry.points.at(-1) ??
-    null
+    geometry.points.find((point) => point.id === activeId) ?? geometry.points.at(-1) ?? null
 
   useEffect(
     () => () => {
@@ -255,22 +239,17 @@ export function ComparisonChart3D({
     }
   }
 
-  function handlePointKeyDown(
-    event: React.KeyboardEvent<SVGCircleElement>,
-    index: number,
-  ) {
-    const direction =
-      ['ArrowRight', 'ArrowDown'].includes(event.key)
-        ? 1
-        : ['ArrowLeft', 'ArrowUp'].includes(event.key)
-          ? -1
-          : 0
+  function handlePointKeyDown(event: React.KeyboardEvent<SVGCircleElement>, index: number) {
+    const direction = ['ArrowRight', 'ArrowDown'].includes(event.key)
+      ? 1
+      : ['ArrowLeft', 'ArrowUp'].includes(event.key)
+        ? -1
+        : 0
 
     if (direction === 0) return
 
     event.preventDefault()
-    const nextIndex =
-      (index + direction + geometry.points.length) % geometry.points.length
+    const nextIndex = (index + direction + geometry.points.length) % geometry.points.length
     event.currentTarget.ownerSVGElement
       ?.querySelector<SVGCircleElement>(`[data-3d-point="${nextIndex}"]`)
       ?.focus()
@@ -288,7 +267,7 @@ export function ComparisonChart3D({
     <div className="border-y border-border">
       <div className="flex flex-col lg:flex-row">
         <div className="relative min-w-0 flex-1 bg-card">
-          <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-md bg-background p-1">
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md bg-background p-1">
             {Object.entries(VIEW_PRESETS).map(([label, view]) => (
               <button
                 key={label}
@@ -308,7 +287,7 @@ export function ComparisonChart3D({
             viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
             role="group"
             aria-label={`Interactive 3D scatter plot of ${METRIC_CONFIG[metrics.x].label}, ${METRIC_CONFIG[metrics.y].label}, and ${METRIC_CONFIG[metrics.z].label}`}
-            className="block h-[32rem] w-full touch-none cursor-grab select-none data-[dragging=true]:cursor-grabbing sm:h-[38rem]"
+            className="block h-[32rem] w-full cursor-grab touch-none select-none data-[dragging=true]:cursor-grabbing sm:h-[38rem]"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -379,7 +358,7 @@ export function ComparisonChart3D({
                       fill={FAMILY_CHART_COLORS[point.family]}
                       stroke={isActive ? 'var(--foreground)' : 'var(--background)'}
                       strokeWidth={isActive ? 3 : 2}
-                      className="outline-none transition-[r,opacity] duration-200 focus-visible:stroke-[var(--ring)]"
+                      className="transition-[r,opacity] duration-200 outline-none focus-visible:stroke-[var(--ring)]"
                       onPointerEnter={() => setActiveId(point.id)}
                       onFocus={() => setActiveId(point.id)}
                       onClick={(event) => {
@@ -409,16 +388,14 @@ export function ComparisonChart3D({
 
         <aside
           aria-live="polite"
-          className="w-full border-t border-border p-5 lg:w-64 lg:border-l lg:border-t-0"
+          className="w-full border-t border-border p-5 lg:w-64 lg:border-t-0 lg:border-l"
         >
           <p className="text-xs text-muted-foreground">
             {geometry.points.length} comparable variants
           </p>
           {activePoint ? (
             <>
-              <h2 className="mt-2 text-base font-semibold tracking-tight">
-                {activePoint.label}
-              </h2>
+              <h2 className="mt-2 text-base font-semibold tracking-tight">{activePoint.label}</h2>
               <dl className="mt-6 space-y-4">
                 {AXES.map((axis) => (
                   <div key={axis}>
