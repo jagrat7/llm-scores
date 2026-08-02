@@ -35,6 +35,7 @@
         "serverDirectory": "server"
       }
     ],
+    "react/react-in-jsx-scope": "off",
     "unicorn/filename-case": [
       "error",
       {

@@ -1,15 +1,15 @@
-import type { QueryClient } from '@tanstack/react-query'
+import type { QueryClient } from "@tanstack/react-query"
 
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { TanStackDevtools } from "@tanstack/react-devtools"
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
-import AppHeader from '#/components/app-header'
+import AppHeader from "#/components/app-header"
 
-import ClerkProvider from '../components/integrations/clerk/provider'
-import PostHogProvider from '../components/integrations/posthog/provider'
-import TanStackQueryDevtools from '../components/integrations/tanstack-query/devtools'
-import appCss from '../styles.css?url'
+import ClerkProvider from "../components/integrations/clerk/provider"
+import PostHogProvider from "../components/integrations/posthog/provider"
+import TanStackQueryDevtools from "../components/integrations/tanstack-query/devtools"
+import appCss from "../styles.css?url"
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -21,19 +21,19 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
     meta: [
       {
-        charSet: 'utf-8',
+        charSet: "utf-8",
       },
       {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
       },
       {
-        title: 'llm-scores — compare language models',
+        title: "llm-scores — compare language models",
       },
     ],
     links: [
       {
-        rel: 'stylesheet',
+        rel: "stylesheet",
         href: appCss,
       },
     ],
@@ -56,11 +56,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             <TanStackDevtools
               config={{
                 hideUntilHover: true,
-                position: 'bottom-right',
+                position: "bottom-right",
               }}
               plugins={[
                 {
-                  name: 'Tanstack Router',
+                  name: "Tanstack Router",
                   render: <TanStackRouterDevtoolsPanel />,
                 },
                 TanStackQueryDevtools,

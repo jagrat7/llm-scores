@@ -1,5 +1,5 @@
-import { CONTENT_WIDTH_CLASS } from '#/lib/layout-styles'
-import { cn } from '#/lib/utils'
+import { CONTENT_WIDTH_CLASS } from "#/lib/layout-styles"
+import { cn } from "#/lib/utils"
 
 export function PageShell({
   children,

@@ -1,29 +1,29 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { lazy, Suspense } from 'react'
-import { z } from 'zod'
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { lazy, Suspense } from "react"
+import { z } from "zod"
 
-import { ChartSkeleton } from '#/components/chart-skeleton'
-import { DataState } from '#/components/data-state'
-import { MetricSelect } from '#/components/metric-select'
-import { PageShell } from '#/components/page-shell'
-import { SourceFooter } from '#/components/source-attribution'
-import { METRICS } from '#/lib/metrics'
-import { orpc } from '#/lib/orpc-client'
+import { ChartSkeleton } from "#/components/chart-skeleton"
+import { DataState } from "#/components/data-state"
+import { MetricSelect } from "#/components/metric-select"
+import { PageShell } from "#/components/page-shell"
+import { SourceFooter } from "#/components/source-attribution"
+import { METRICS } from "#/lib/metrics"
+import { orpc } from "#/lib/orpc-client"
 
 const ComparisonChart3D = lazy(() =>
-  import('#/components/comparison-chart-3d').then((module) => ({
+  import("#/components/comparison-chart-3d").then((module) => ({
     default: module.ComparisonChart3D,
   })),
 )
 const metricSchema = z.enum(METRICS)
 const graphSearchSchema = z.object({
-  x: metricSchema.catch('cost').default('cost'),
-  y: metricSchema.catch('score').default('score'),
-  z: metricSchema.catch('speed').default('speed'),
+  x: metricSchema.catch("cost").default("cost"),
+  y: metricSchema.catch("score").default("score"),
+  z: metricSchema.catch("speed").default("speed"),
 })
 
-export const Route = createFileRoute('/graph-3d')({
+export const Route = createFileRoute("/graph-3d")({
   validateSearch: (search) => graphSearchSchema.parse(search),
   component: Graph3DPage,
 })
@@ -46,7 +46,7 @@ function Graph3DPage() {
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">3D model space</h1>
-          <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">
+          <p className="text-muted-foreground mt-1 max-w-xl text-xs leading-5">
             Explore how model quality, cost, and speed relate across a third dimension.
           </p>
         </div>
@@ -66,7 +66,7 @@ function Graph3DPage() {
           <MetricSelect
             axis="Z"
             value={search.z}
-            onChange={(z) => updateSearch({ z })}
+            onChange={(nextZ) => updateSearch({ z: nextZ })}
             disabled={controlsDisabled}
           />
         </div>

@@ -1,4 +1,4 @@
-import type { Metric } from '#/lib/metrics'
+import type { Metric } from "#/lib/metrics"
 
 import {
   Select,
@@ -6,9 +6,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '#/components/ui/select'
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
-import { METRICS, METRIC_CONFIG } from '#/lib/metrics'
+} from "#/components/ui/select"
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
+import { METRICS, METRIC_CONFIG } from "#/lib/metrics"
 
 export function MetricSelect({
   axis,
@@ -16,7 +16,7 @@ export function MetricSelect({
   onChange,
   disabled = false,
 }: {
-  axis: 'X' | 'Y' | 'Z'
+  axis: "X" | "Y" | "Z"
   value: Metric
   onChange: (metric: Metric) => void
   disabled?: boolean
@@ -32,11 +32,11 @@ export function MetricSelect({
       <SelectTrigger
         size="sm"
         aria-label={label}
-        className={`gap-2 bg-background px-2.5 text-sm text-muted-foreground shadow-none focus-visible:outline-none sm:text-xs dark:bg-background dark:hover:bg-muted ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+        className={`bg-background text-muted-foreground dark:bg-background dark:hover:bg-muted gap-2 px-2.5 text-sm shadow-none focus-visible:outline-none sm:text-xs ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
       >
         <span aria-hidden="true">{axis}</span>
         <span className="sr-only">{label}</span>
-        <SelectValue className="font-medium text-foreground" />
+        <SelectValue className="text-foreground font-medium" />
       </SelectTrigger>
       <SelectContent
         position="popper"

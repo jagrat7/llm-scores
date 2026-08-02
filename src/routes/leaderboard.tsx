@@ -1,14 +1,14 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 
-import { TableSkeleton } from '#/components/chart-skeleton'
-import { DataState } from '#/components/data-state'
-import { LeaderboardTable } from '#/components/leaderboard-table'
-import { PageShell } from '#/components/page-shell'
-import { SourceFooter } from '#/components/source-attribution'
-import { orpc } from '#/lib/orpc-client'
+import { TableSkeleton } from "#/components/chart-skeleton"
+import { DataState } from "#/components/data-state"
+import { LeaderboardTable } from "#/components/leaderboard-table"
+import { PageShell } from "#/components/page-shell"
+import { SourceFooter } from "#/components/source-attribution"
+import { orpc } from "#/lib/orpc-client"
 
-export const Route = createFileRoute('/leaderboard')({
+export const Route = createFileRoute("/leaderboard")({
   component: LeaderboardPage,
 })
 
@@ -20,10 +20,10 @@ function LeaderboardPage() {
       <div className="mb-5 flex items-baseline justify-between gap-4">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Leaderboard</h1>
-          <p className="mt-1 text-xs text-muted-foreground">DeepSWE model×effort results</p>
+          <p className="text-muted-foreground mt-1 text-xs">DeepSWE model×effort results</p>
         </div>
         {data ? (
-          <span className="text-xs text-muted-foreground">{data.models.length} variants</span>
+          <span className="text-muted-foreground text-xs">{data.models.length} variants</span>
         ) : null}
       </div>
 

@@ -1,13 +1,13 @@
-import { z } from 'zod'
+import { z } from "zod"
 
-import { EFFORT_ORDER, getModelConfig } from '#/shared/model-config'
-import { env } from '#/env'
-import type { JoinedModel, ModelsResponse, SourceStatus } from '#/shared/models'
+import { EFFORT_ORDER, getModelConfig } from "#/shared/model-config"
+import { env } from "#/env"
+import type { JoinedModel, ModelsResponse, SourceStatus } from "#/shared/models"
 
-import { getRedis } from '#/server/services/cache'
+import { getRedis } from "#/server/services/cache"
 
-const DEEPSWE_URL = 'https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json'
-const AA_URL = 'https://artificialanalysis.ai/api/v2/language/models/free'
+const DEEPSWE_URL = "https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json"
+const AA_URL = "https://artificialanalysis.ai/api/v2/language/models/free"
 const CACHE_TTL_SECONDS = 60 * 60
 const STALE_TTL_SECONDS = 24 * 60 * 60
 const MAX_AA_PAGES = 100
@@ -88,7 +88,7 @@ export function joinModelData(deepswe: DeepSWEData | null, aaModels: Array<AAMod
   if (!deepswe) {
     return aaModels.map((model): JoinedModel => {
       const effortMatch = model.slug.match(/-(low|medium|high|xhigh|max)$/)
-      const effort = effortMatch?.[1] ?? 'default'
+      const effort = effortMatch?.[1] ?? "default"
       const baseSlug = effortMatch ? model.slug.slice(0, -effortMatch[0].length) : model.slug
       const config = getModelConfig(baseSlug)
       const costPerMTokens = getBlendedPrice(model)
@@ -105,8 +105,8 @@ export function joinModelData(deepswe: DeepSWEData | null, aaModels: Array<AAMod
         durationSeconds: null,
         sources: {
           score: null,
-          costPerMTokens: costPerMTokens == null ? null : 'Artificial Analysis',
-          tokensPerSecond: tokensPerSecond == null ? null : 'Artificial Analysis',
+          costPerMTokens: costPerMTokens == null ? null : "Artificial Analysis",
+          tokensPerSecond: tokensPerSecond == null ? null : "Artificial Analysis",
           durationSeconds: null,
         },
       }
@@ -117,8 +117,8 @@ export function joinModelData(deepswe: DeepSWEData | null, aaModels: Array<AAMod
 
   return deepswe.rows
     .map((row): JoinedModel => {
-      const effort = row.reasoning_effort ?? 'default'
-      const effortSlug = ['default', 'max'].includes(effort) ? row.model : `${row.model}-${effort}`
+      const effort = row.reasoning_effort ?? "default"
+      const effortSlug = ["default", "max"].includes(effort) ? row.model : `${row.model}-${effort}`
       const aaModel = aaBySlug.get(effortSlug) ?? aaBySlug.get(row.model)
       const config = getModelConfig(row.model)
       const aaCostPerMTokens = getBlendedPrice(aaModel)
@@ -135,19 +135,19 @@ export function joinModelData(deepswe: DeepSWEData | null, aaModels: Array<AAMod
         tokensPerSecond,
         durationSeconds: row.mean_duration_seconds ?? null,
         sources: {
-          score: 'DeepSWE',
+          score: "DeepSWE",
           costPerMTokens:
             costPerMTokens == null
               ? null
               : aaCostPerMTokens == null
-                ? 'DeepSWE'
-                : 'Artificial Analysis',
-          tokensPerSecond: tokensPerSecond == null ? null : 'Artificial Analysis',
-          durationSeconds: row.mean_duration_seconds == null ? null : 'DeepSWE',
+                ? "DeepSWE"
+                : "Artificial Analysis",
+          tokensPerSecond: tokensPerSecond == null ? null : "Artificial Analysis",
+          durationSeconds: row.mean_duration_seconds == null ? null : "DeepSWE",
         },
       }
     })
-    .sort((left, right) => {
+    .toSorted((left, right) => {
       const modelOrder = (right.score ?? 0) - (left.score ?? 0)
       return modelOrder !== 0
         ? modelOrder
@@ -181,22 +181,22 @@ async function fetchCachedSource<T>(
   fetcher: () => Promise<T>,
 ): Promise<SourceResult<T | null>> {
   const cached = await getCacheEntry<T>(key)
-  if (cached) return { ...cached, fromCache: true, status: 'ok' }
+  if (cached) return { ...cached, fromCache: true, status: "ok" }
 
   try {
     const data = await fetcher()
     const entry = { data, fetchedAt: new Date().toISOString() }
     await setCacheEntry(key, entry)
-    return { ...entry, fromCache: false, status: 'ok' }
+    return { ...entry, fromCache: false, status: "ok" }
   } catch {
     const stale = await getCacheEntry<T>(`${key}:stale`)
-    if (stale) return { ...stale, fromCache: true, status: 'error' }
+    if (stale) return { ...stale, fromCache: true, status: "error" }
 
     return {
       data: null,
       fetchedAt: new Date().toISOString(),
       fromCache: false,
-      status: 'error',
+      status: "error",
     }
   }
 }
@@ -210,13 +210,13 @@ async function fetchDeepSWE() {
 }
 
 async function fetchArtificialAnalysis() {
-  if (!env.AA_API_KEY) throw new Error('AA_API_KEY is not configured')
+  if (!env.AA_API_KEY) throw new Error("AA_API_KEY is not configured")
 
   const models: Array<AAModel> = []
 
   for (let page = 1; page <= MAX_AA_PAGES; page += 1) {
     const response = await fetch(`${AA_URL}?page=${page}`, {
-      headers: { 'x-api-key': env.AA_API_KEY },
+      headers: { "x-api-key": env.AA_API_KEY },
       signal: AbortSignal.timeout(20_000),
     })
     if (!response.ok) {
@@ -233,8 +233,8 @@ async function fetchArtificialAnalysis() {
 
 export async function listModels(): Promise<ModelsResponse> {
   const [deepswe, artificialAnalysis] = await Promise.all([
-    fetchCachedSource<DeepSWEData>('llm-scores:deepswe:v1.1', fetchDeepSWE),
-    fetchCachedSource<Array<AAModel>>('llm-scores:artificial-analysis:v2', fetchArtificialAnalysis),
+    fetchCachedSource<DeepSWEData>("llm-scores:deepswe:v1.1", fetchDeepSWE),
+    fetchCachedSource<Array<AAModel>>("llm-scores:artificial-analysis:v2", fetchArtificialAnalysis),
   ])
 
   const sourceEntries = [deepswe, artificialAnalysis]

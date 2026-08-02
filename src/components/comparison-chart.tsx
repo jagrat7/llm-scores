@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   CartesianGrid,
   ComposedChart,
@@ -8,15 +8,15 @@ import {
   Scatter,
   XAxis,
   YAxis,
-} from 'recharts'
+} from "recharts"
 
-import type { Metric } from '#/lib/metrics'
-import type { JoinedModel } from '#/shared/models'
+import type { Metric } from "#/lib/metrics"
+import type { JoinedModel } from "#/shared/models"
 
-import { DataState } from '#/components/data-state'
-import { EFFORT_ORDER, FAMILY_CHART_COLORS } from '#/shared/model-config'
-import { CHART_HEIGHT_CLASS } from '#/lib/layout-styles'
-import { formatMetric, METRIC_CONFIG } from '#/lib/metrics'
+import { DataState } from "#/components/data-state"
+import { EFFORT_ORDER, FAMILY_CHART_COLORS } from "#/shared/model-config"
+import { CHART_HEIGHT_CLASS } from "#/lib/layout-styles"
+import { formatMetric, METRIC_CONFIG } from "#/lib/metrics"
 
 type ChartPoint = JoinedModel & {
   id: string
@@ -51,19 +51,19 @@ function PointLabel({
   y = 0,
 }: {
   index?: number
-  placement: 'top' | 'bottom'
+  placement: "top" | "bottom"
   value?: number | string
   x?: number | string
   y?: number | string
 }) {
   if (value == null) return null
 
-  const lines = String(value).split(' ')
+  const lines = String(value).split(" ")
   const xPosition = Number(x)
   const yPosition = Number(y)
-  const resolvedPlacement = index % 2 === 0 ? placement : placement === 'top' ? 'bottom' : 'top'
+  const resolvedPlacement = index % 2 === 0 ? placement : placement === "top" ? "bottom" : "top"
   const startY =
-    resolvedPlacement === 'bottom'
+    resolvedPlacement === "bottom"
       ? yPosition + LABEL_DOT_OFFSET
       : yPosition - LABEL_DOT_OFFSET - (lines.length - 1) * LABEL_LINE_HEIGHT
 
@@ -77,8 +77,12 @@ function PointLabel({
       pointerEvents="none"
       textAnchor="middle"
     >
-      {lines.map((line, index) => (
-        <tspan key={`${line}-${index}`} x={xPosition} dy={index === 0 ? 0 : LABEL_LINE_HEIGHT}>
+      {lines.map((line, lineIndex) => (
+        <tspan
+          key={`${line}-${lineIndex}`}
+          x={xPosition}
+          dy={lineIndex === 0 ? 0 : LABEL_LINE_HEIGHT}
+        >
           {line}
         </tspan>
       ))}
@@ -90,7 +94,7 @@ function InteractivePoint({
   activePointId,
   cx = 0,
   cy = 0,
-  fill = 'var(--foreground)',
+  fill = "var(--foreground)",
   payload,
   onActivate,
 }: PointShapeProps) {
@@ -114,7 +118,7 @@ function InteractivePoint({
         cy={cy}
         r={active ? 7 : 5}
         fill={fill}
-        stroke={active ? 'var(--ring)' : 'var(--background)'}
+        stroke={active ? "var(--ring)" : "var(--background)"}
         strokeWidth={active ? 3 : 2}
         pointerEvents="none"
       />
@@ -142,10 +146,10 @@ export function ComparisonChart({
       const xValue = model[xKey]
       const yValue = model[yKey]
 
-      if (typeof xValue !== 'number') return []
-      if (typeof yValue !== 'number') return []
+      if (typeof xValue !== "number") return []
+      if (typeof yValue !== "number") return []
 
-      const effortLabel = model.effort === 'default' ? '' : ` [${model.effort}]`
+      const effortLabel = model.effort === "default" ? "" : ` [${model.effort}]`
 
       return {
         ...model,
@@ -158,44 +162,44 @@ export function ComparisonChart({
         yMetric,
       }
     })
-    const indexedPoints = points.map((point, pointIndex) => ({
+    const pointsWithIndex = points.map((point, pointIndex) => ({
       ...point,
       pointIndex,
     }))
     const pointsBySlug = new Map<string, Array<ChartPoint>>()
 
-    for (const point of indexedPoints) {
+    for (const point of pointsWithIndex) {
       const seriesPoints = pointsBySlug.get(point.slug) ?? []
       seriesPoints.push(point)
       pointsBySlug.set(point.slug, seriesPoints)
     }
 
-    const familyOccurrences = new Map<JoinedModel['family'], number>()
-    const series = Array.from(pointsBySlug.entries()).map(([slug, seriesPoints]) => {
+    const familyOccurrences = new Map<JoinedModel["family"], number>()
+    const chartSeries = Array.from(pointsBySlug.entries()).map(([slug, seriesPoints]) => {
       const family = seriesPoints[0].family
       const familyOccurrence = familyOccurrences.get(family) ?? 0
-      const labelPosition: 'top' | 'bottom' = familyOccurrence % 2 === 0 ? 'top' : 'bottom'
+      const labelPosition: "top" | "bottom" = familyOccurrence % 2 === 0 ? "top" : "bottom"
       familyOccurrences.set(family, familyOccurrence + 1)
 
       return {
         slug,
         color: FAMILY_CHART_COLORS[family],
         labelPosition,
-        points: [...seriesPoints].sort(
+        points: seriesPoints.toSorted(
           (left, right) => (EFFORT_ORDER[left.effort] ?? 0) - (EFFORT_ORDER[right.effort] ?? 0),
         ),
       }
     })
 
-    return { indexedPoints, series }
+    return { indexedPoints: pointsWithIndex, series: chartSeries }
   }, [models, xMetric, yMetric])
 
   useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
     const update = () => setReduceMotion(media.matches)
     update()
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
   }, [])
 
   useEffect(() => {
@@ -207,10 +211,10 @@ export function ComparisonChart({
     const resolveLabelCollisions = () => {
       cancelAnimationFrame(animationFrame)
       animationFrame = requestAnimationFrame(() => {
-        const labels = Array.from(chart.querySelectorAll<SVGTextElement>('.chart-point-label'))
+        const labels = Array.from(chart.querySelectorAll<SVGTextElement>(".chart-point-label"))
         const visibleBounds: Array<DOMRect> = []
 
-        for (const label of labels) label.style.visibility = 'visible'
+        for (const label of labels) label.style.visibility = "visible"
 
         for (const label of labels) {
           const bounds = label.getBoundingClientRect()
@@ -222,7 +226,7 @@ export function ComparisonChart({
               bounds.bottom > visible.top - LABEL_COLLISION_GAP,
           )
 
-          label.style.visibility = intersects ? 'hidden' : 'visible'
+          label.style.visibility = intersects ? "hidden" : "visible"
           if (!intersects) visibleBounds.push(bounds)
         }
       })
@@ -245,14 +249,14 @@ export function ComparisonChart({
   }, [series])
 
   const modelCount = new Set(indexedPoints.map((point) => point.slug)).size
-  const modelNoun = modelCount === 1 ? 'model' : 'models'
-  const variantNoun = indexedPoints.length === 1 ? 'variant' : 'variants'
+  const modelNoun = modelCount === 1 ? "model" : "models"
+  const variantNoun = indexedPoints.length === 1 ? "variant" : "variants"
   const chartLabel = `Scatter chart comparing ${modelCount} ${modelNoun} (${indexedPoints.length} effort ${variantNoun}) by ${METRIC_CONFIG[yMetric].label} versus ${METRIC_CONFIG[xMetric].label}. Use arrow keys to move between points.`
 
   function handlePointKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, pointIndex: number) {
-    const direction = ['ArrowRight', 'ArrowDown'].includes(event.key)
+    const direction = ["ArrowRight", "ArrowDown"].includes(event.key)
       ? 1
-      : ['ArrowLeft', 'ArrowUp'].includes(event.key)
+      : ["ArrowLeft", "ArrowUp"].includes(event.key)
         ? -1
         : 0
 
@@ -290,16 +294,16 @@ export function ComparisonChart({
             type="number"
             dataKey="xValue"
             name={METRIC_CONFIG[xMetric].label}
-            domain={['auto', 'auto']}
+            domain={["auto", "auto"]}
             tickFormatter={(value) => formatMetric(Number(value), xMetric)}
-            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-            tickLine={{ stroke: 'var(--border)' }}
-            axisLine={{ stroke: 'var(--border)' }}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+            tickLine={{ stroke: "var(--border)" }}
+            axisLine={{ stroke: "var(--border)" }}
             label={{
               value: `${METRIC_CONFIG[xMetric].label} · ${METRIC_CONFIG[xMetric].unit}`,
-              position: 'insideBottom',
+              position: "insideBottom",
               offset: -24,
-              fill: 'var(--muted-foreground)',
+              fill: "var(--muted-foreground)",
               fontSize: 11,
             }}
           />
@@ -307,17 +311,17 @@ export function ComparisonChart({
             type="number"
             dataKey="yValue"
             name={METRIC_CONFIG[yMetric].label}
-            domain={['auto', 'auto']}
+            domain={["auto", "auto"]}
             tickFormatter={(value) => formatMetric(Number(value), yMetric)}
-            tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-            tickLine={{ stroke: 'var(--border)' }}
-            axisLine={{ stroke: 'var(--border)' }}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+            tickLine={{ stroke: "var(--border)" }}
+            axisLine={{ stroke: "var(--border)" }}
             width={Y_AXIS_WIDTH}
             label={{
               value: `${METRIC_CONFIG[yMetric].label} · ${METRIC_CONFIG[yMetric].unit}`,
               angle: -90,
-              position: 'insideLeft',
-              fill: 'var(--muted-foreground)',
+              position: "insideLeft",
+              fill: "var(--muted-foreground)",
               fontSize: 11,
             }}
           />
@@ -379,43 +383,43 @@ export function ComparisonChart({
       <div
         aria-hidden={activePoint == null}
         aria-live="polite"
-        className={`pointer-events-none absolute top-3 right-3 max-w-[calc(100%-1.5rem)] min-w-56 rounded-md border border-border bg-popover p-3 text-xs text-popover-foreground transition-opacity duration-200 ease-out ${
-          activePoint == null ? 'opacity-0' : 'opacity-100'
+        className={`border-border bg-popover text-popover-foreground pointer-events-none absolute top-3 right-3 max-w-[calc(100%-1.5rem)] min-w-56 rounded-md border p-3 text-xs transition-opacity duration-200 ease-out ${
+          activePoint == null ? "opacity-0" : "opacity-100"
         }`}
       >
         {activePoint ? (
           <>
             <div className="mb-2 font-medium">{activePoint.displayName}</div>
-            <div className="mb-2 text-muted-foreground">Effort: {activePoint.effort}</div>
+            <div className="text-muted-foreground mb-2">Effort: {activePoint.effort}</div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
               <dt>{METRIC_CONFIG[xMetric].label}</dt>
               <dd className="text-right font-medium">
                 {formatMetric(activePoint.xValue, xMetric)}
-                <span className="ml-1 text-muted-foreground">
+                <span className="text-muted-foreground ml-1">
                   [
                   {activePoint.sources[
                     METRIC_CONFIG[xMetric].dataKey as keyof typeof activePoint.sources
-                  ] === 'DeepSWE'
-                    ? 'D'
-                    : 'AA'}
+                  ] === "DeepSWE"
+                    ? "D"
+                    : "AA"}
                   ]
                 </span>
               </dd>
               <dt>{METRIC_CONFIG[yMetric].label}</dt>
               <dd className="text-right font-medium">
                 {formatMetric(activePoint.yValue, yMetric)}
-                <span className="ml-1 text-muted-foreground">
+                <span className="text-muted-foreground ml-1">
                   [
                   {activePoint.sources[
                     METRIC_CONFIG[yMetric].dataKey as keyof typeof activePoint.sources
-                  ] === 'DeepSWE'
-                    ? 'D'
-                    : 'AA'}
+                  ] === "DeepSWE"
+                    ? "D"
+                    : "AA"}
                   ]
                 </span>
               </dd>
             </dl>
-            <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">
+            <div className="border-border text-muted-foreground mt-2 border-t pt-2 text-xs">
               D DeepSWE · AA Artificial Analysis
             </div>
           </>

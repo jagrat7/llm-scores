@@ -1,4 +1,4 @@
-import { listModelsProcedure } from './models'
+import { listModelsProcedure } from "./models"
 
 export default {
   models: {

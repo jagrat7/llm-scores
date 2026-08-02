@@ -1,24 +1,24 @@
-const DEFAULT_SERVER_ALIAS = '@/server'
-const DEFAULT_SERVER_DIRECTORY = 'server'
+const DEFAULT_SERVER_ALIAS = "@/server"
+const DEFAULT_SERVER_DIRECTORY = "server"
 
 const noServerDeepImports = {
   meta: {
-    type: 'problem',
+    type: "problem",
     docs: {
       description:
-        'Require consumers outside a server module to import from its public entry point',
+        "Require consumers outside a server module to import from its public entry point",
     },
     schema: [
       {
-        type: 'object',
+        type: "object",
         properties: {
           modules: {
-            type: 'array',
-            items: { type: 'string' },
+            type: "array",
+            items: { type: "string" },
             uniqueItems: true,
           },
-          serverAlias: { type: 'string' },
-          serverDirectory: { type: 'string' },
+          serverAlias: { type: "string" },
+          serverDirectory: { type: "string" },
         },
         additionalProperties: false,
       },
@@ -31,19 +31,19 @@ const noServerDeepImports = {
   create(context) {
     const [options = {}] = context.options ?? []
     const moduleNames = new Set(options.modules ?? [])
-    const serverAlias = (options.serverAlias ?? DEFAULT_SERVER_ALIAS).replace(/\/+$/, '')
+    const serverAlias = (options.serverAlias ?? DEFAULT_SERVER_ALIAS).replace(/\/+$/, "")
     const serverDirectory = (options.serverDirectory ?? DEFAULT_SERVER_DIRECTORY).replace(
       /^\/+|\/+$/g,
-      '',
+      "",
     )
-    const filename = (context.filename ?? context.getFilename?.() ?? '').replaceAll('\\', '/')
+    const filename = (context.filename ?? context.getFilename?.() ?? "").replaceAll("\\", "/")
 
     const checkSource = (node, sourceNode) => {
-      const source = typeof sourceNode?.value === 'string' ? sourceNode.value : null
+      const source = typeof sourceNode?.value === "string" ? sourceNode.value : null
 
       if (!source?.startsWith(`${serverAlias}/`)) return
 
-      const [moduleName, ...privatePath] = source.slice(serverAlias.length + 1).split('/')
+      const [moduleName, ...privatePath] = source.slice(serverAlias.length + 1).split("/")
 
       if (!moduleName || privatePath.length === 0) return
       if (moduleNames.size > 0 && !moduleNames.has(moduleName)) return
@@ -51,7 +51,7 @@ const noServerDeepImports = {
 
       context.report({
         node,
-        messageId: 'deepImport',
+        messageId: "deepImport",
         data: {
           publicEntry: `${serverAlias}/${moduleName}`,
           source,

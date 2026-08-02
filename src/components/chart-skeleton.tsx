@@ -9,12 +9,12 @@ export function ChartSkeleton() {
       aria-label="Loading comparison chart"
       role="status"
     >
-      <div className="absolute top-10 right-10 bottom-10 left-20 overflow-hidden border-b border-l border-border">
+      <div className="border-border absolute top-10 right-10 bottom-10 left-20 overflow-hidden border-b border-l">
         <div className="skeleton-shimmer absolute inset-0 opacity-70" />
         {Array.from({ length: CHART_GRID_LINES }, (_, index) => (
           <div
             key={index}
-            className="absolute right-0 left-0 h-px bg-border"
+            className="bg-border absolute right-0 left-0 h-px"
             style={{ top: `${(index + 1) * 20}%` }}
           />
         ))}
@@ -32,12 +32,12 @@ export function TableSkeleton() {
       data-table-frame="loading"
       aria-label="Loading leaderboard"
       role="status"
-      className="overflow-x-auto border-y border-border lg:overflow-x-visible"
+      className="border-border overflow-x-auto border-y lg:overflow-x-visible"
     >
       <table aria-hidden="true" className={`${TABLE_WIDTH_CLASS} border-collapse text-sm`}>
         <thead>
-          <tr className="border-b border-border">
-            {['w-40', 'w-40', 'w-20', 'w-20', 'w-20', 'w-16'].map((width, index) => (
+          <tr className="border-border border-b">
+            {["w-40", "w-40", "w-20", "w-20", "w-20", "w-16"].map((width, index) => (
               <th key={index} className="h-11 px-3 text-left sm:h-10">
                 <div className={`skeleton-shimmer h-3 rounded-sm opacity-70 ${width}`} />
               </th>
@@ -46,7 +46,7 @@ export function TableSkeleton() {
         </thead>
         <tbody>
           {Array.from({ length: TABLE_SKELETON_ROWS }, (_, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-border last:border-b-0">
+            <tr key={rowIndex} className="border-border border-b last:border-b-0">
               <td className="h-11 px-3">
                 <div className="skeleton-shimmer h-3 w-40 rounded-sm opacity-70" />
               </td>
@@ -56,7 +56,7 @@ export function TableSkeleton() {
                   <div className="skeleton-shimmer h-1.5 flex-1 rounded-full opacity-70" />
                 </div>
               </td>
-              {Array.from({ length: 4 }, (_, cellIndex) => (
+              {Array.from({ length: 4 }, (_unused, cellIndex) => (
                 <td key={cellIndex} className="h-11 px-3">
                   <div className="skeleton-shimmer ml-auto h-3 w-16 rounded-sm opacity-70" />
                 </td>
@@ -69,4 +69,4 @@ export function TableSkeleton() {
     </div>
   )
 }
-import { CHART_HEIGHT_CLASS, TABLE_WIDTH_CLASS } from '#/lib/layout-styles'
+import { CHART_HEIGHT_CLASS, TABLE_WIDTH_CLASS } from "#/lib/layout-styles"

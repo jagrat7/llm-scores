@@ -1,31 +1,31 @@
-const DEFAULT_NAME_PATTERN = 'Service$'
+const DEFAULT_NAME_PATTERN = "Service$"
 const OBJECT_EXPRESSION_WRAPPERS = new Set([
-  'TSAsExpression',
-  'TSNonNullExpression',
-  'TSSatisfiesExpression',
-  'TSTypeAssertion',
+  "TSAsExpression",
+  "TSNonNullExpression",
+  "TSSatisfiesExpression",
+  "TSTypeAssertion",
 ])
-const TYPE_ONLY_DECLARATIONS = new Set(['TSInterfaceDeclaration', 'TSTypeAliasDeclaration'])
+const TYPE_ONLY_DECLARATIONS = new Set(["TSInterfaceDeclaration", "TSTypeAliasDeclaration"])
 
 const onlyServiceExport = {
   meta: {
-    type: 'problem',
+    type: "problem",
     docs: {
-      description: 'Allow a single service object and type-only exports from service entry points',
+      description: "Allow a single service object and type-only exports from service entry points",
     },
     schema: [
       {
-        type: 'object',
+        type: "object",
         properties: {
-          namePattern: { type: 'string' },
+          namePattern: { type: "string" },
         },
         additionalProperties: false,
       },
     ],
     messages: {
-      duplicateService: 'Only one service object may be exported',
+      duplicateService: "Only one service object may be exported",
       invalidExport:
-        'Only a const service object matching the configured name pattern may be exported as a runtime value',
+        "Only a const service object matching the configured name pattern may be exported as a runtime value",
     },
   },
 
@@ -36,20 +36,20 @@ const onlyServiceExport = {
 
     return {
       ExportAllDeclaration(node) {
-        if (node.exportKind === 'type') return
+        if (node.exportKind === "type") return
 
-        context.report({ node, messageId: 'invalidExport' })
+        context.report({ node, messageId: "invalidExport" })
       },
 
       ExportDefaultDeclaration(node) {
-        context.report({ node, messageId: 'invalidExport' })
+        context.report({ node, messageId: "invalidExport" })
       },
 
       ExportNamedDeclaration(node) {
         const declaration = node.declaration
 
         if (
-          node.exportKind === 'type' ||
+          node.exportKind === "type" ||
           (declaration && TYPE_ONLY_DECLARATIONS.has(declaration.type))
         ) {
           return
@@ -57,33 +57,33 @@ const onlyServiceExport = {
 
         if (!declaration) {
           for (const specifier of node.specifiers) {
-            if (specifier.exportKind === 'type') continue
-            context.report({ node: specifier, messageId: 'invalidExport' })
+            if (specifier.exportKind === "type") continue
+            context.report({ node: specifier, messageId: "invalidExport" })
           }
 
           return
         }
 
-        if (declaration.type !== 'VariableDeclaration' || declaration.kind !== 'const') {
-          context.report({ node: declaration, messageId: 'invalidExport' })
+        if (declaration.type !== "VariableDeclaration" || declaration.kind !== "const") {
+          context.report({ node: declaration, messageId: "invalidExport" })
           return
         }
 
         for (const declarator of declaration.declarations) {
-          const name = declarator.id.type === 'Identifier' ? declarator.id.name : ''
+          const name = declarator.id.type === "Identifier" ? declarator.id.name : ""
           let initializer = declarator.init
 
           while (initializer && OBJECT_EXPRESSION_WRAPPERS.has(initializer.type)) {
             initializer = initializer.expression
           }
 
-          if (!serviceNamePattern.test(name) || initializer?.type !== 'ObjectExpression') {
-            context.report({ node: declarator, messageId: 'invalidExport' })
+          if (!serviceNamePattern.test(name) || initializer?.type !== "ObjectExpression") {
+            context.report({ node: declarator, messageId: "invalidExport" })
             continue
           }
 
           if (serviceExportNode) {
-            context.report({ node: declarator, messageId: 'duplicateService' })
+            context.report({ node: declarator, messageId: "duplicateService" })
             continue
           }
 

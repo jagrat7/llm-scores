@@ -1,40 +1,40 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeftRight } from 'lucide-react'
-import { lazy, Suspense } from 'react'
-import { z } from 'zod'
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { ArrowLeftRight } from "lucide-react"
+import { lazy, Suspense } from "react"
+import { z } from "zod"
 
-import { ChartSkeleton } from '#/components/chart-skeleton'
-import { DataState } from '#/components/data-state'
-import { MetricSelect } from '#/components/metric-select'
-import { ModelPicker } from '#/components/model-picker'
-import { PageShell } from '#/components/page-shell'
-import { SourceFooter } from '#/components/source-attribution'
-import { DEFAULT_MODEL_SLUGS } from '#/shared/model-config'
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
-import { CHART_HEIGHT_CLASS } from '#/lib/layout-styles'
-import { METRICS } from '#/lib/metrics'
-import { orpc } from '#/lib/orpc-client'
+import { ChartSkeleton } from "#/components/chart-skeleton"
+import { DataState } from "#/components/data-state"
+import { MetricSelect } from "#/components/metric-select"
+import { ModelPicker } from "#/components/model-picker"
+import { PageShell } from "#/components/page-shell"
+import { SourceFooter } from "#/components/source-attribution"
+import { DEFAULT_MODEL_SLUGS } from "#/shared/model-config"
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
+import { CHART_HEIGHT_CLASS } from "#/lib/layout-styles"
+import { METRICS } from "#/lib/metrics"
+import { orpc } from "#/lib/orpc-client"
 
 const ComparisonChart = lazy(() =>
-  import('#/components/comparison-chart').then((module) => ({
+  import("#/components/comparison-chart").then((module) => ({
     default: module.ComparisonChart,
   })),
 )
 
 const metricSchema = z.enum(METRICS)
 const compareSearchSchema = z.object({
-  x: metricSchema.catch('cost').default('cost'),
-  y: metricSchema.catch('score').default('score'),
+  x: metricSchema.catch("cost").default("cost"),
+  y: metricSchema.catch("score").default("score"),
   models: z
     .preprocess(
-      (value) => (typeof value === 'string' ? [value] : value),
+      (value) => (typeof value === "string" ? [value] : value),
       z.array(z.string()).default(DEFAULT_MODEL_SLUGS),
     )
     .catch(DEFAULT_MODEL_SLUGS),
 })
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   validateSearch: (search) => compareSearchSchema.parse(search),
   component: ComparePage,
 })
@@ -68,7 +68,7 @@ function ComparePage() {
         <button
           type="button"
           onClick={() => updateSearch({ x: search.y, y: search.x })}
-          className={`inline-flex w-11 items-center justify-center rounded-md text-muted-foreground sm:w-8 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+          className={`text-muted-foreground inline-flex w-11 items-center justify-center rounded-md sm:w-8 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
           aria-label="Swap chart axes"
           title="Swap axes"
           disabled={controlsDisabled}
@@ -127,7 +127,7 @@ function ComparePage() {
         <SourceFooter data={data}>
           <Link
             to="/leaderboard"
-            className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline decoration-border underline-offset-2 transition-colors duration-200 ease-out hover:text-foreground active:text-foreground sm:min-h-6 sm:text-xs"
+            className="text-muted-foreground decoration-border hover:text-foreground active:text-foreground inline-flex min-h-11 items-center text-sm underline underline-offset-2 transition-colors duration-200 ease-out sm:min-h-6 sm:text-xs"
           >
             View data table
           </Link>

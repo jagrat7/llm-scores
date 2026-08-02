@@ -1,12 +1,12 @@
-import { Rotate3D } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Rotate3D } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
-import type { Metric } from '#/lib/metrics'
-import type { JoinedModel } from '#/shared/models'
+import type { Metric } from "#/lib/metrics"
+import type { JoinedModel } from "#/shared/models"
 
-import { FAMILY_CHART_COLORS } from '#/shared/model-config'
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from '#/lib/interaction-styles'
-import { formatMetric, METRIC_CONFIG } from '#/lib/metrics'
+import { FAMILY_CHART_COLORS } from "#/shared/model-config"
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
+import { formatMetric, METRIC_CONFIG } from "#/lib/metrics"
 
 type Rotation = {
   pitch: number
@@ -27,12 +27,12 @@ type ProjectedCoordinate = Coordinate & {
 type PlotPoint = JoinedModel & {
   id: string
   label: string
-  values: Record<'x' | 'y' | 'z', number>
+  values: Record<"x" | "y" | "z", number>
   coordinate: Coordinate
   projected: ProjectedCoordinate
 }
 
-type AxisName = 'x' | 'y' | 'z'
+type AxisName = "x" | "y" | "z"
 
 const VIEW_WIDTH = 960
 const VIEW_HEIGHT = 620
@@ -47,7 +47,7 @@ const VIEW_PRESETS: Record<string, Rotation> = {
   Front: { pitch: 0, yaw: 0 },
   Top: { pitch: -Math.PI / 2, yaw: 0 },
 }
-const AXES: Array<AxisName> = ['x', 'y', 'z']
+const AXES: Array<AxisName> = ["x", "y", "z"]
 const CUBE_VERTICES: Array<Coordinate> = [
   { x: CUBE_MIN, y: CUBE_MIN, z: CUBE_MIN },
   { x: CUBE_MAX, y: CUBE_MIN, z: CUBE_MIN },
@@ -103,7 +103,7 @@ function getMetricValue(model: JoinedModel, metric: Metric) {
   const dataKey = METRIC_CONFIG[metric].dataKey as keyof JoinedModel
   const value = model[dataKey]
 
-  return typeof value === 'number' ? value : null
+  return typeof value === "number" ? value : null
 }
 
 export function ComparisonChart3D({
@@ -169,7 +169,7 @@ export function ComparisonChart3D({
             return [axis, normalized - 0.5]
           }),
         ) as Coordinate
-        const effortLabel = model.effort === 'default' ? '' : ` [${model.effort}]`
+        const effortLabel = model.effort === "default" ? "" : ` [${model.effort}]`
 
         return {
           ...model,
@@ -180,7 +180,7 @@ export function ComparisonChart3D({
           projected: getProjection(coordinate, rotation),
         }
       })
-      .sort((left, right) => left.projected.depth - right.projected.depth)
+      .toSorted((left, right) => left.projected.depth - right.projected.depth)
 
     return { projectedVertices, gridLines, axisLabels, points }
   }, [chartData, rotation])
@@ -212,7 +212,7 @@ export function ComparisonChart3D({
       y: event.clientY,
       rotation,
     }
-    event.currentTarget.dataset.dragging = 'true'
+    event.currentTarget.dataset.dragging = "true"
   }
 
   function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
@@ -240,9 +240,9 @@ export function ComparisonChart3D({
   }
 
   function handlePointKeyDown(event: React.KeyboardEvent<SVGCircleElement>, index: number) {
-    const direction = ['ArrowRight', 'ArrowDown'].includes(event.key)
+    const direction = ["ArrowRight", "ArrowDown"].includes(event.key)
       ? 1
-      : ['ArrowLeft', 'ArrowUp'].includes(event.key)
+      : ["ArrowLeft", "ArrowUp"].includes(event.key)
         ? -1
         : 0
 
@@ -257,29 +257,29 @@ export function ComparisonChart3D({
 
   if (geometry.points.length === 0) {
     return (
-      <div className="flex min-h-[32rem] items-center justify-center border-y border-border text-sm text-muted-foreground">
+      <div className="border-border text-muted-foreground flex min-h-[32rem] items-center justify-center border-y text-sm">
         No models have values for all three selected metrics
       </div>
     )
   }
 
   return (
-    <div className="border-y border-border">
+    <div className="border-border border-y">
       <div className="flex flex-col lg:flex-row">
-        <div className="relative min-w-0 flex-1 bg-card">
-          <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md bg-background p-1">
+        <div className="bg-card relative min-w-0 flex-1">
+          <div className="bg-background absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md p-1">
             {Object.entries(VIEW_PRESETS).map(([label, view]) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => updateRotation(view)}
-                className={`rounded px-2.5 text-xs text-muted-foreground ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+                className={`text-muted-foreground rounded px-2.5 text-xs ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
               >
                 {label}
               </button>
             ))}
           </div>
-          <p className="pointer-events-none absolute bottom-3 left-3 z-10 hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+          <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-10 hidden items-center gap-1.5 text-xs sm:flex">
             <Rotate3D aria-hidden="true" className="h-3.5 w-3.5" />
             Drag to rotate
           </p>
@@ -351,12 +351,12 @@ export function ComparisonChart3D({
                       data-3d-point={index}
                       tabIndex={0}
                       role="button"
-                      aria-label={`${point.label}: ${AXES.map((axis) => `${METRIC_CONFIG[metrics[axis]].label} ${formatMetric(point.values[axis], metrics[axis])}`).join(', ')}`}
+                      aria-label={`${point.label}: ${AXES.map((axis) => `${METRIC_CONFIG[metrics[axis]].label} ${formatMetric(point.values[axis], metrics[axis])}`).join(", ")}`}
                       cx={point.projected.x}
                       cy={point.projected.y}
                       r={radius}
                       fill={FAMILY_CHART_COLORS[point.family]}
-                      stroke={isActive ? 'var(--foreground)' : 'var(--background)'}
+                      stroke={isActive ? "var(--foreground)" : "var(--background)"}
                       strokeWidth={isActive ? 3 : 2}
                       className="transition-[r,opacity] duration-200 outline-none focus-visible:stroke-[var(--ring)]"
                       onPointerEnter={() => setActiveId(point.id)}
@@ -388,9 +388,9 @@ export function ComparisonChart3D({
 
         <aside
           aria-live="polite"
-          className="w-full border-t border-border p-5 lg:w-64 lg:border-t-0 lg:border-l"
+          className="border-border w-full border-t p-5 lg:w-64 lg:border-t-0 lg:border-l"
         >
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {geometry.points.length} comparable variants
           </p>
           {activePoint ? (
@@ -399,19 +399,19 @@ export function ComparisonChart3D({
               <dl className="mt-6 space-y-4">
                 {AXES.map((axis) => (
                   <div key={axis}>
-                    <dt className="text-xs text-muted-foreground">
+                    <dt className="text-muted-foreground text-xs">
                       {axis.toUpperCase()} · {METRIC_CONFIG[metrics[axis]].label}
                     </dt>
                     <dd className="mt-0.5 text-sm font-medium">
                       {formatMetric(activePoint.values[axis], metrics[axis])}
-                      <span className="ml-1 font-normal text-muted-foreground">
+                      <span className="text-muted-foreground ml-1 font-normal">
                         {METRIC_CONFIG[metrics[axis]].unit}
                       </span>
                     </dd>
                   </div>
                 ))}
               </dl>
-              <p className="mt-7 text-xs leading-5 text-muted-foreground">
+              <p className="text-muted-foreground mt-7 text-xs leading-5">
                 Arrow keys move between points when the plot is focused.
               </p>
             </>

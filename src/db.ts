@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless'
+import { neon } from "@neondatabase/serverless"
 
 let client: ReturnType<typeof neon>
 
