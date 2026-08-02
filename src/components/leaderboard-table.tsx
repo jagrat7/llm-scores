@@ -64,7 +64,7 @@ function renderScoreCell({
   getValue,
 }: {
   row: { original: JoinedModel }
-  getValue: () => number | null | undefined
+  getValue: () => number | null
 }) {
   const score = getValue()
   return (

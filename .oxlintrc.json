@@ -11,6 +11,7 @@
       "specifier": "./dev/oxlint/index.mjs"
     }
   ],
+  "options": { "typeAware": true },
   "ignorePatterns": [
     "node_modules/**",
     ".output/**",

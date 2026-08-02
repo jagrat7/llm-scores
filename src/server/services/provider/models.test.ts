@@ -1,38 +1,37 @@
 import { describe, expect, it } from "vitest"
 
-import { joinModelData } from "./models"
+import { ModelsService } from "./models"
 
-describe("joinModelData", () => {
+const modelsService = new ModelsService()
+
+describe("ModelsService", () => {
   it("matches effort-specific Artificial Analysis slugs before base slugs", () => {
-    const models = joinModelData(
-      {
-        rows: [
-          {
-            model: "gpt-5-5",
-            pass_rate: 0.67,
-            reasoning_effort: "high",
-            mean_duration_seconds: 120,
-            mean_output_tokens: 10_000,
-            mean_cost_usd: 2,
-          },
-        ],
-      },
+    const models = modelsService.joinModels(
       [
         {
           slug: "gpt-5-5",
-          pricing: {
-            price_1m_input_tokens: 1,
-            price_1m_output_tokens: 5,
-          },
-          performance: { median_output_tokens_per_second: 50 },
+          effort: "high",
+          score: 67,
+          costPerMTokens: 200,
+          durationSeconds: 120,
+        },
+      ],
+      [
+        {
+          providerSlug: "gpt-5-5",
+          slug: "gpt-5-5",
+          displayName: undefined,
+          effort: "default",
+          costPerMTokens: 2,
+          tokensPerSecond: 50,
         },
         {
-          slug: "gpt-5-5-high",
-          pricing: {
-            price_1m_input_tokens: 2,
-            price_1m_output_tokens: 10,
-          },
-          performance: { median_output_tokens_per_second: 75 },
+          providerSlug: "gpt-5-5-high",
+          slug: "gpt-5-5",
+          displayName: undefined,
+          effort: "high",
+          costPerMTokens: 4,
+          tokensPerSecond: 75,
         },
       ],
     )

@@ -139,8 +139,8 @@ export function ComparisonChart({
   const [activePoint, setActivePoint] = useState<ChartPoint | null>(null)
   const [reduceMotion, setReduceMotion] = useState(true)
   const { indexedPoints, series } = useMemo(() => {
-    const xKey = METRIC_CONFIG[xMetric].dataKey as keyof JoinedModel
-    const yKey = METRIC_CONFIG[yMetric].dataKey as keyof JoinedModel
+    const xKey = METRIC_CONFIG[xMetric].dataKey
+    const yKey = METRIC_CONFIG[yMetric].dataKey
 
     const points = models.flatMap((model) => {
       const xValue = model[xKey]
@@ -204,7 +204,7 @@ export function ComparisonChart({
 
   useEffect(() => {
     const chart = chartRef.current
-    if (!chart) return
+    if (!chart) return undefined
 
     let animationFrame = 0
     let animationTimeout = 0
@@ -396,26 +396,14 @@ export function ComparisonChart({
               <dd className="text-right font-medium">
                 {formatMetric(activePoint.xValue, xMetric)}
                 <span className="text-muted-foreground ml-1">
-                  [
-                  {activePoint.sources[
-                    METRIC_CONFIG[xMetric].dataKey as keyof typeof activePoint.sources
-                  ] === "DeepSWE"
-                    ? "D"
-                    : "AA"}
-                  ]
+                  [{activePoint.sources[METRIC_CONFIG[xMetric].dataKey] === "DeepSWE" ? "D" : "AA"}]
                 </span>
               </dd>
               <dt>{METRIC_CONFIG[yMetric].label}</dt>
               <dd className="text-right font-medium">
                 {formatMetric(activePoint.yValue, yMetric)}
                 <span className="text-muted-foreground ml-1">
-                  [
-                  {activePoint.sources[
-                    METRIC_CONFIG[yMetric].dataKey as keyof typeof activePoint.sources
-                  ] === "DeepSWE"
-                    ? "D"
-                    : "AA"}
-                  ]
+                  [{activePoint.sources[METRIC_CONFIG[yMetric].dataKey] === "DeepSWE" ? "D" : "AA"}]
                 </span>
               </dd>
             </dl>

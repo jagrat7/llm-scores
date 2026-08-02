@@ -100,10 +100,19 @@ function getProjection(coordinate: Coordinate, rotation: Rotation): ProjectedCoo
 }
 
 function getMetricValue(model: JoinedModel, metric: Metric) {
-  const dataKey = METRIC_CONFIG[metric].dataKey as keyof JoinedModel
-  const value = model[dataKey]
+  const value = model[METRIC_CONFIG[metric].dataKey]
 
   return typeof value === "number" ? value : null
+}
+
+function axisRange(rawPoints: Array<{ values: Record<AxisName, number> }>, axis: AxisName) {
+  const values = rawPoints.map((point) => point.values[axis])
+  return { min: Math.min(...values), max: Math.max(...values) }
+}
+
+function normalizeAxis(value: number, range: { min: number; max: number }) {
+  const span = range.max - range.min
+  return (span === 0 ? 0.5 : (value - range.min) / span) - 0.5
 }
 
 export function ComparisonChart3D({
@@ -125,22 +134,19 @@ export function ComparisonChart3D({
   const [activeId, setActiveId] = useState<string | null>(null)
   const chartData = useMemo(() => {
     const rawPoints = models.flatMap((model) => {
-      const values = {
-        x: getMetricValue(model, metrics.x),
-        y: getMetricValue(model, metrics.y),
-        z: getMetricValue(model, metrics.z),
-      }
+      const x = getMetricValue(model, metrics.x)
+      const y = getMetricValue(model, metrics.y)
+      const z = getMetricValue(model, metrics.z)
 
-      if (values.x == null || values.y == null || values.z == null) return []
+      if (x == null || y == null || z == null) return []
 
-      return [{ model, values: values as Record<AxisName, number> }]
+      return [{ model, values: { x, y, z } }]
     })
-    const ranges = Object.fromEntries(
-      AXES.map((axis) => {
-        const values = rawPoints.map((point) => point.values[axis])
-        return [axis, { min: Math.min(...values), max: Math.max(...values) }]
-      }),
-    ) as Record<AxisName, { min: number; max: number }>
+    const ranges: Record<AxisName, { min: number; max: number }> = {
+      x: axisRange(rawPoints, "x"),
+      y: axisRange(rawPoints, "y"),
+      z: axisRange(rawPoints, "z"),
+    }
 
     return { rawPoints, ranges }
   }, [metrics, models])
@@ -156,19 +162,18 @@ export function ComparisonChart3D({
         getProjection({ x: step, y: CUBE_MIN, z: CUBE_MAX }, rotation),
       ],
     ])
-    const axisLabels = Object.fromEntries(
-      AXES.map((axis) => [axis, getProjection(AXIS_ENDPOINTS[axis], rotation)]),
-    ) as Record<AxisName, ProjectedCoordinate>
+    const axisLabels: Record<AxisName, ProjectedCoordinate> = {
+      x: getProjection(AXIS_ENDPOINTS.x, rotation),
+      y: getProjection(AXIS_ENDPOINTS.y, rotation),
+      z: getProjection(AXIS_ENDPOINTS.z, rotation),
+    }
     const points = chartData.rawPoints
       .map(({ model, values }): PlotPoint => {
-        const coordinate = Object.fromEntries(
-          AXES.map((axis) => {
-            const range = chartData.ranges[axis]
-            const span = range.max - range.min
-            const normalized = span === 0 ? 0.5 : (values[axis] - range.min) / span
-            return [axis, normalized - 0.5]
-          }),
-        ) as Coordinate
+        const coordinate: Coordinate = {
+          x: normalizeAxis(values.x, chartData.ranges.x),
+          y: normalizeAxis(values.y, chartData.ranges.y),
+          z: normalizeAxis(values.z, chartData.ranges.z),
+        }
         const effortLabel = model.effort === "default" ? "" : ` [${model.effort}]`
 
         return {

@@ -7,11 +7,15 @@ type ThemeMode = "system" | "light" | "dark"
 
 const THEME_MODES: Array<ThemeMode> = ["system", "light", "dark"]
 
+function isThemeMode(value: string | null): value is ThemeMode {
+  return value === "system" || value === "light" || value === "dark"
+}
+
 function getStoredMode(): ThemeMode {
   if (typeof window === "undefined") return "system"
 
   const stored = window.localStorage.getItem("theme")
-  return stored && THEME_MODES.includes(stored as ThemeMode) ? (stored as ThemeMode) : "system"
+  return isThemeMode(stored) ? stored : "system"
 }
 
 function applyTheme(mode: ThemeMode) {
@@ -35,7 +39,7 @@ export default function ThemeToggle() {
   }, [])
 
   useEffect(() => {
-    if (mode !== "system") return
+    if (mode !== "system") return undefined
 
     const media = window.matchMedia("(prefers-color-scheme: dark)")
     const handleChange = () => applyTheme("system")

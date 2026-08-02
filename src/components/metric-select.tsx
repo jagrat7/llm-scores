@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "#/components/ui/select"
 import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
-import { METRICS, METRIC_CONFIG } from "#/lib/metrics"
+import { isMetric, METRICS, METRIC_CONFIG } from "#/lib/metrics"
 
 export function MetricSelect({
   axis,
@@ -26,7 +26,9 @@ export function MetricSelect({
   return (
     <Select
       value={value}
-      onValueChange={(metric) => onChange(metric as Metric)}
+      onValueChange={(metric) => {
+        if (isMetric(metric)) onChange(metric)
+      }}
       disabled={disabled}
     >
       <SelectTrigger

@@ -1,13 +1,18 @@
-import type { getModelConfig } from "./model-config"
+import type { ModelFamily } from "./model-config"
 
-export type SourceName = "deepswe" | "artificialAnalysis"
+export const MODEL_SOURCES = {
+  deepswe: "DeepSWE",
+  artificialAnalysis: "Artificial Analysis",
+} as const
+
+export type SourceName = keyof typeof MODEL_SOURCES
 export type SourceStatus = "ok" | "error"
-export type MetricSource = "DeepSWE" | "Artificial Analysis" | null
+export type MetricSource = (typeof MODEL_SOURCES)[SourceName] | null
 
 export type JoinedModel = {
   slug: string
   displayName: string
-  family: ReturnType<typeof getModelConfig>["family"]
+  family: ModelFamily
   effort: string
   score: number | null
   costPerMTokens: number | null

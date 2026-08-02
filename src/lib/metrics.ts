@@ -2,9 +2,15 @@ export const METRICS = ["score", "cost", "speed", "duration"] as const
 
 export type Metric = (typeof METRICS)[number]
 
+export type MetricDataKey = "score" | "costPerMTokens" | "tokensPerSecond" | "durationSeconds"
+
+export function isMetric(value: string): value is Metric {
+  return (METRICS as ReadonlyArray<string>).includes(value)
+}
+
 export const METRIC_CONFIG: Record<
   Metric,
-  { label: string; shortLabel: string; unit: string; dataKey: string }
+  { label: string; shortLabel: string; unit: string; dataKey: MetricDataKey }
 > = {
   score: {
     label: "Score",
