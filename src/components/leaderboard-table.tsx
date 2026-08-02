@@ -10,15 +10,14 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { useState } from "react"
 
-import type { JoinedModel } from "#/shared/models"
+import type { Model } from "#/lib/orpc-client"
 
-import { FAMILY_CHART_COLORS } from "#/shared/model-config"
 import { INTERACTIVE_SURFACE_CLASS } from "#/lib/interaction-styles"
 import { TABLE_WIDTH_CLASS } from "#/lib/layout-styles"
 import { formatMetric } from "#/lib/metrics"
 import { cn } from "#/lib/utils"
 
-const columnHelper = createColumnHelper<JoinedModel>()
+const columnHelper = createColumnHelper<Model>()
 const RIGHT_ALIGNED_COLUMN_IDS = new Set([
   "score",
   "costPerMTokens",
@@ -28,7 +27,7 @@ const RIGHT_ALIGNED_COLUMN_IDS = new Set([
 ])
 const SOURCE_NAMES = ["DeepSWE", "Artificial Analysis"] as const
 
-function sourceLabel(model: JoinedModel) {
+function sourceLabel(model: Model) {
   const sources = new Set(Object.values(model.sources).filter(Boolean))
   const labels = SOURCE_NAMES.filter((source) => sources.has(source))
 
@@ -39,7 +38,7 @@ function renderModelCell({
   row,
   getValue,
 }: {
-  row: { original: JoinedModel }
+  row: { original: Model }
   getValue: () => string
 }) {
   const effortLabel = row.original.effort === "default" ? "" : ` [${row.original.effort}]`
@@ -63,7 +62,7 @@ function renderScoreCell({
   row,
   getValue,
 }: {
-  row: { original: JoinedModel }
+  row: { original: Model }
   getValue: () => number | null
 }) {
   const score = getValue()
@@ -75,7 +74,7 @@ function renderScoreCell({
           className="block h-full origin-left rounded-full transition-transform duration-200 ease-out"
           style={{
             transform: `scaleX(${Math.max(0, Math.min(100, score ?? 0)) / 100})`,
-            backgroundColor: FAMILY_CHART_COLORS[row.original.family],
+            backgroundColor: row.original.chartColor,
           }}
         />
       </span>
@@ -83,7 +82,7 @@ function renderScoreCell({
   )
 }
 
-function renderSourceCell({ row }: { row: { original: JoinedModel } }) {
+function renderSourceCell({ row }: { row: { original: Model } }) {
   const label = sourceLabel(row.original)
 
   return (
@@ -129,7 +128,7 @@ const columns = [
   }),
 ]
 
-export function LeaderboardTable({ models }: { models: Array<JoinedModel> }) {
+export function LeaderboardTable({ models }: { models: Array<Model> }) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "score", desc: true }])
   const table = useReactTable({
     data: models,

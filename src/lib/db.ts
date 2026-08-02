@@ -1,14 +1,12 @@
 import { neon } from "@neondatabase/serverless"
 
+import { env } from "#/env"
+
 let client: ReturnType<typeof neon>
 
 export async function getClient() {
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) {
-    return undefined
-  }
   if (!client) {
-    client = neon(databaseUrl)
+    client = neon(env.DATABASE_URL)
   }
   return client
 }

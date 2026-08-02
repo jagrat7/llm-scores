@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { lazy, Suspense } from "react"
 import { z } from "zod"
@@ -9,7 +8,7 @@ import { MetricSelect } from "#/components/metric-select"
 import { PageShell } from "#/components/page-shell"
 import { SourceFooter } from "#/components/source-attribution"
 import { METRICS } from "#/lib/metrics"
-import { orpc } from "#/lib/orpc-client"
+import { useModels } from "#/lib/use-models"
 
 const ComparisonChart3D = lazy(() =>
   import("#/components/comparison-chart-3d").then((module) => ({
@@ -31,7 +30,7 @@ export const Route = createFileRoute("/graph-3d")({
 function Graph3DPage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, isError } = useQuery(orpc.models.list.queryOptions({ input: {} }))
+  const { data, isPending, isError } = useModels()
   const controlsDisabled = isPending ? true : isError
 
   function updateSearch(update: Partial<typeof search>) {
@@ -89,7 +88,7 @@ function Graph3DPage() {
           />
         </Suspense>
       ) : null}
-      {data ? <SourceFooter data={data} /> : null}
+      {data ? <SourceFooter /> : null}
     </PageShell>
   )
 }

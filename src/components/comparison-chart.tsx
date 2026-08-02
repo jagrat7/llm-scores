@@ -11,14 +11,13 @@ import {
 } from "recharts"
 
 import type { Metric } from "#/lib/metrics"
-import type { JoinedModel } from "#/shared/models"
+import type { Model } from "#/lib/orpc-client"
 
 import { DataState } from "#/components/data-state"
-import { EFFORT_ORDER, FAMILY_CHART_COLORS } from "#/shared/model-config"
 import { CHART_HEIGHT_CLASS } from "#/lib/layout-styles"
 import { formatMetric, METRIC_CONFIG } from "#/lib/metrics"
 
-type ChartPoint = JoinedModel & {
+type ChartPoint = Model & {
   id: string
   label: string
   pointIndex: number
@@ -131,7 +130,7 @@ export function ComparisonChart({
   xMetric,
   yMetric,
 }: {
-  models: Array<JoinedModel>
+  models: Array<Model>
   xMetric: Metric
   yMetric: Metric
 }) {
@@ -153,7 +152,7 @@ export function ComparisonChart({
 
       return {
         ...model,
-        id: `${model.slug}-${model.effort}`,
+        id: `${model.model}-${model.effort}`,
         label: `${model.displayName}${effortLabel}`,
         pointIndex: 0,
         xValue,
@@ -166,28 +165,26 @@ export function ComparisonChart({
       ...point,
       pointIndex,
     }))
-    const pointsBySlug = new Map<string, Array<ChartPoint>>()
+    const pointsByModel = new Map<string, Array<ChartPoint>>()
 
     for (const point of pointsWithIndex) {
-      const seriesPoints = pointsBySlug.get(point.slug) ?? []
+      const seriesPoints = pointsByModel.get(point.model) ?? []
       seriesPoints.push(point)
-      pointsBySlug.set(point.slug, seriesPoints)
+      pointsByModel.set(point.model, seriesPoints)
     }
 
-    const familyOccurrences = new Map<JoinedModel["family"], number>()
-    const chartSeries = Array.from(pointsBySlug.entries()).map(([slug, seriesPoints]) => {
+    const familyOccurrences = new Map<Model["family"], number>()
+    const chartSeries = Array.from(pointsByModel.entries()).map(([model, seriesPoints]) => {
       const family = seriesPoints[0].family
       const familyOccurrence = familyOccurrences.get(family) ?? 0
       const labelPosition: "top" | "bottom" = familyOccurrence % 2 === 0 ? "top" : "bottom"
       familyOccurrences.set(family, familyOccurrence + 1)
 
       return {
-        slug,
-        color: FAMILY_CHART_COLORS[family],
+        model,
+        color: seriesPoints[0].chartColor,
         labelPosition,
-        points: seriesPoints.toSorted(
-          (left, right) => (EFFORT_ORDER[left.effort] ?? 0) - (EFFORT_ORDER[right.effort] ?? 0),
-        ),
+        points: seriesPoints.toSorted((left, right) => left.effortOrder - right.effortOrder),
       }
     })
 
@@ -248,7 +245,7 @@ export function ComparisonChart({
     }
   }, [series])
 
-  const modelCount = new Set(indexedPoints.map((point) => point.slug)).size
+  const modelCount = new Set(indexedPoints.map((point) => point.model)).size
   const modelNoun = modelCount === 1 ? "model" : "models"
   const variantNoun = indexedPoints.length === 1 ? "variant" : "variants"
   const chartLabel = `Scatter chart comparing ${modelCount} ${modelNoun} (${indexedPoints.length} effort ${variantNoun}) by ${METRIC_CONFIG[yMetric].label} versus ${METRIC_CONFIG[xMetric].label}. Use arrow keys to move between points.`
@@ -327,7 +324,7 @@ export function ComparisonChart({
           />
           {series.map((modelSeries) => (
             <Line
-              key={`line-${modelSeries.slug}`}
+              key={`line-${modelSeries.model}`}
               data={modelSeries.points}
               dataKey="yValue"
               stroke={modelSeries.color}
@@ -342,7 +339,7 @@ export function ComparisonChart({
           ))}
           {series.map((modelSeries) => (
             <Scatter
-              key={`points-${modelSeries.slug}`}
+              key={`points-${modelSeries.model}`}
               data={modelSeries.points}
               fill={modelSeries.color}
               isAnimationActive={!reduceMotion}

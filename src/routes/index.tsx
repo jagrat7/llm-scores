@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeftRight } from "lucide-react"
 import { lazy, Suspense } from "react"
@@ -10,11 +9,10 @@ import { MetricSelect } from "#/components/metric-select"
 import { ModelPicker } from "#/components/model-picker"
 import { PageShell } from "#/components/page-shell"
 import { SourceFooter } from "#/components/source-attribution"
-import { DEFAULT_MODEL_SLUGS } from "#/shared/model-config"
 import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
 import { CHART_HEIGHT_CLASS } from "#/lib/layout-styles"
 import { METRICS } from "#/lib/metrics"
-import { orpc } from "#/lib/orpc-client"
+import { useModels } from "#/lib/use-models"
 
 const ComparisonChart = lazy(() =>
   import("#/components/comparison-chart").then((module) => ({
@@ -29,9 +27,9 @@ const compareSearchSchema = z.object({
   models: z
     .preprocess(
       (value) => (typeof value === "string" ? [value] : value),
-      z.array(z.string()).default(DEFAULT_MODEL_SLUGS),
+      z.array(z.string()).optional(),
     )
-    .catch(DEFAULT_MODEL_SLUGS),
+    .catch(undefined),
 })
 
 export const Route = createFileRoute("/")({
@@ -42,7 +40,7 @@ export const Route = createFileRoute("/")({
 function ComparePage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, isError } = useQuery(orpc.models.list.queryOptions({ input: {} }))
+  const { data, isPending, isError } = useModels()
 
   function updateSearch(update: Partial<typeof search>) {
     void navigate({
@@ -51,8 +49,9 @@ function ComparePage() {
     })
   }
 
-  const selectedSlugs = new Set(search.models)
-  const selectedModels = data?.models.filter((model) => selectedSlugs.has(model.slug)) ?? []
+  const selected = search.models ?? data?.defaultModels ?? []
+  const selectedModelIds = new Set(selected)
+  const selectedModels = data?.models.filter((model) => selectedModelIds.has(model.model)) ?? []
   const controlsDisabled = isPending ? true : isError
 
   return (
@@ -83,7 +82,7 @@ function ComparePage() {
         />
         <ModelPicker
           models={data?.models ?? []}
-          selected={search.models}
+          selected={selected}
           onChange={(models) => updateSearch({ models })}
           disabled={controlsDisabled}
         />
@@ -95,23 +94,23 @@ function ComparePage() {
           Unable to load model data
         </DataState>
       ) : null}
-      {data && search.models.length === 0 ? (
+      {data && selected.length === 0 ? (
         <DataState className={CHART_HEIGHT_CLASS}>
           <p>Select models to compare</p>
           <ModelPicker
             models={data.models}
-            selected={search.models}
+            selected={selected}
             onChange={(models) => updateSearch({ models })}
             align="center"
           />
         </DataState>
       ) : null}
-      {data && search.models.length > 0 && selectedModels.length === 0 ? (
+      {data && selected.length > 0 && selectedModels.length === 0 ? (
         <DataState className={CHART_HEIGHT_CLASS}>
           <p>No selected models are available</p>
           <ModelPicker
             models={data.models}
-            selected={search.models}
+            selected={selected}
             onChange={(models) => updateSearch({ models })}
             align="center"
           />
@@ -124,7 +123,7 @@ function ComparePage() {
       ) : null}
 
       {data ? (
-        <SourceFooter data={data}>
+        <SourceFooter>
           <Link
             to="/leaderboard"
             className="text-muted-foreground decoration-border hover:text-foreground active:text-foreground inline-flex min-h-11 items-center text-sm underline underline-offset-2 transition-colors duration-200 ease-out sm:min-h-6 sm:text-xs"

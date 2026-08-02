@@ -1,6 +1,8 @@
 import { Redis } from "@upstash/redis"
 
-import type { SourceStatus } from "#/shared/models"
+import { env } from "#/env"
+
+import type { ProviderStatus } from "./provider/provider.types"
 
 const CACHE_TTL_SECONDS = 60 * 60
 const STALE_TTL_SECONDS = 24 * 60 * 60
@@ -14,10 +16,10 @@ export type CachedSource<T> = {
   data: T | null
   fetchedAt: string
   fromCache: boolean
-  status: SourceStatus
+  status: ProviderStatus
 }
 
-export class CacheService {
+export class ProviderCache {
   private redisClient: Redis | undefined
 
   constructor(
@@ -49,8 +51,8 @@ export class CacheService {
   }
 
   private getRedis() {
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN
-    const url = process.env.UPSTASH_REDIS_REST_URL
+    const token = env.UPSTASH_REDIS_REST_TOKEN
+    const url = env.UPSTASH_REDIS_REST_URL
 
     if (!token || !url) return undefined
 

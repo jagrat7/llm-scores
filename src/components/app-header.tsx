@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router"
 
-import { DEFAULT_MODEL_SLUGS } from "#/shared/model-config"
 import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
 import { CONTENT_WIDTH_CLASS } from "#/lib/layout-styles"
 
@@ -18,7 +17,7 @@ export default function AppHeader() {
       >
         <Link
           to="/"
-          search={{ x: "cost", y: "score", models: DEFAULT_MODEL_SLUGS }}
+          search={{ x: "cost", y: "score" }}
           aria-label="llm-scores home"
           className={WORDMARK_CLASS}
         >
@@ -26,7 +25,7 @@ export default function AppHeader() {
         </Link>
         <Link
           to="/"
-          search={{ x: "cost", y: "score", models: DEFAULT_MODEL_SLUGS }}
+          search={{ x: "cost", y: "score" }}
           activeOptions={{ exact: true }}
           className={NAV_LINK_CLASS}
           activeProps={{ className: `${NAV_LINK_CLASS} bg-muted text-foreground` }}

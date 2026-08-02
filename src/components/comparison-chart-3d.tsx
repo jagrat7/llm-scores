@@ -2,9 +2,8 @@ import { Rotate3D } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { Metric } from "#/lib/metrics"
-import type { JoinedModel } from "#/shared/models"
+import type { Model } from "#/lib/orpc-client"
 
-import { FAMILY_CHART_COLORS } from "#/shared/model-config"
 import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
 import { formatMetric, METRIC_CONFIG } from "#/lib/metrics"
 
@@ -24,7 +23,7 @@ type ProjectedCoordinate = Coordinate & {
   scale: number
 }
 
-type PlotPoint = JoinedModel & {
+type PlotPoint = Model & {
   id: string
   label: string
   values: Record<"x" | "y" | "z", number>
@@ -99,7 +98,7 @@ function getProjection(coordinate: Coordinate, rotation: Rotation): ProjectedCoo
   }
 }
 
-function getMetricValue(model: JoinedModel, metric: Metric) {
+function getMetricValue(model: Model, metric: Metric) {
   const value = model[METRIC_CONFIG[metric].dataKey]
 
   return typeof value === "number" ? value : null
@@ -119,7 +118,7 @@ export function ComparisonChart3D({
   models,
   metrics,
 }: {
-  models: Array<JoinedModel>
+  models: Array<Model>
   metrics: Record<AxisName, Metric>
 }) {
   const dragRef = useRef<{
@@ -178,7 +177,7 @@ export function ComparisonChart3D({
 
         return {
           ...model,
-          id: `${model.slug}-${model.effort}`,
+          id: `${model.model}-${model.effort}`,
           label: `${model.displayName}${effortLabel}`,
           values,
           coordinate,
@@ -360,7 +359,7 @@ export function ComparisonChart3D({
                       cx={point.projected.x}
                       cy={point.projected.y}
                       r={radius}
-                      fill={FAMILY_CHART_COLORS[point.family]}
+                      fill={point.chartColor}
                       stroke={isActive ? "var(--foreground)" : "var(--background)"}
                       strokeWidth={isActive ? 3 : 2}
                       className="transition-[r,opacity] duration-200 outline-none focus-visible:stroke-[var(--ring)]"

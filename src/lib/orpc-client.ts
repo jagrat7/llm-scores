@@ -9,6 +9,23 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 
 import router from "#/server/orpc/router"
 
+type AppClient = RouterClient<typeof router>
+
+export type ProviderModel = Awaited<ReturnType<AppClient["models"]["list"]>>[number]
+export type MetricValue = Awaited<ReturnType<AppClient["models"]["score"]>>
+export type Model = ProviderModel & {
+  score: MetricValue
+  costPerMTokens: MetricValue
+  tokensPerSecond: MetricValue
+  durationSeconds: MetricValue
+  sources: {
+    score: "DeepSWE" | null
+    costPerMTokens: "DeepSWE" | "Artificial Analysis" | null
+    tokensPerSecond: "Artificial Analysis" | null
+    durationSeconds: "DeepSWE" | null
+  }
+}
+
 const getORPCClient = createIsomorphicFn()
   .server(() =>
     createRouterClient(router, {

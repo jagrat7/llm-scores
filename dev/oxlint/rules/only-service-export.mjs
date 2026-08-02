@@ -11,7 +11,8 @@ const onlyServiceExport = {
   meta: {
     type: "problem",
     docs: {
-      description: "Allow a single service object and type-only exports from service entry points",
+      description:
+        "Allow a single service object or class and type-only exports from service entry points",
     },
     schema: [
       {
@@ -23,9 +24,9 @@ const onlyServiceExport = {
       },
     ],
     messages: {
-      duplicateService: "Only one service object may be exported",
+      duplicateService: "Only one service object or class may be exported",
       invalidExport:
-        "Only a const service object matching the configured name pattern may be exported as a runtime value",
+        "Only a const service object or class matching the configured name pattern may be exported as a runtime value",
     },
   },
 
@@ -33,6 +34,15 @@ const onlyServiceExport = {
     const [{ namePattern = DEFAULT_NAME_PATTERN } = {}] = context.options ?? []
     const serviceNamePattern = new RegExp(namePattern)
     let serviceExportNode = null
+
+    function markServiceExport(node) {
+      if (serviceExportNode) {
+        context.report({ node, messageId: "duplicateService" })
+        return
+      }
+
+      serviceExportNode = node
+    }
 
     return {
       ExportAllDeclaration(node) {
@@ -64,6 +74,18 @@ const onlyServiceExport = {
           return
         }
 
+        if (declaration.type === "ClassDeclaration") {
+          const name = declaration.id?.name ?? ""
+
+          if (!serviceNamePattern.test(name)) {
+            context.report({ node: declaration, messageId: "invalidExport" })
+            return
+          }
+
+          markServiceExport(declaration)
+          return
+        }
+
         if (declaration.type !== "VariableDeclaration" || declaration.kind !== "const") {
           context.report({ node: declaration, messageId: "invalidExport" })
           return
@@ -82,12 +104,7 @@ const onlyServiceExport = {
             continue
           }
 
-          if (serviceExportNode) {
-            context.report({ node: declarator, messageId: "duplicateService" })
-            continue
-          }
-
-          serviceExportNode = declarator
+          markServiceExport(declarator)
         }
       },
     }

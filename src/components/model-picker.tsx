@@ -1,13 +1,13 @@
 import { ChevronDown } from "lucide-react"
 import { useMemo } from "react"
 
-import type { JoinedModel } from "#/shared/models"
+import type { Model } from "#/lib/orpc-client"
 
 import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
 import { cn } from "#/lib/utils"
 
 type ModelPickerProps = {
-  models: Array<JoinedModel>
+  models: Array<Model>
   selected: Array<string>
   onChange: (models: Array<string>) => void
   align?: "left" | "center"
@@ -23,16 +23,18 @@ export function ModelPicker({
 }: ModelPickerProps) {
   const options = useMemo(
     () =>
-      Array.from(new Map(models.map((model) => [model.slug, model.displayName])).entries()).sort(
+      Array.from(new Map(models.map((model) => [model.model, model.displayName])).entries()).sort(
         (left, right) => left[1].localeCompare(right[1]),
       ),
     [models],
   )
   const selectedSet = new Set(selected)
 
-  function toggleModel(slug: string) {
+  function toggleModel(model: string) {
     onChange(
-      selectedSet.has(slug) ? selected.filter((model) => model !== slug) : [...selected, slug],
+      selectedSet.has(model)
+        ? selected.filter((selectedModel) => selectedModel !== model)
+        : [...selected, model],
     )
   }
 
@@ -63,15 +65,15 @@ export function ModelPicker({
         />
       </summary>
       <div className="border-border bg-popover text-popover-foreground absolute top-12 left-0 z-30 max-h-72 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border p-1.5 sm:top-10">
-        {options.map(([slug, displayName]) => (
+        {options.map(([model, displayName]) => (
           <label
-            key={slug}
+            key={model}
             className="focus-within:bg-muted hover:bg-muted active:bg-secondary flex min-h-11 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm transition-colors duration-200 ease-out sm:min-h-8 sm:text-xs"
           >
             <input
               type="checkbox"
-              checked={selectedSet.has(slug)}
-              onChange={() => toggleModel(slug)}
+              checked={selectedSet.has(model)}
+              onChange={() => toggleModel(model)}
               className="accent-primary h-4 w-4 shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={disabled}
             />
