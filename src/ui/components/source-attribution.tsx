@@ -1,3 +1,5 @@
+import { SourceLogo } from "#/ui/components/source-logo"
+
 export function SourceAttribution() {
   return (
     <p className="text-muted-foreground flex min-h-6 flex-wrap items-center gap-x-1.5 text-sm sm:text-xs">
@@ -5,8 +7,9 @@ export function SourceAttribution() {
         href="https://deepswe.datacurve.ai/"
         target="_blank"
         rel="noreferrer"
-        className="decoration-border hover:text-foreground active:text-foreground inline-flex min-h-11 items-center underline underline-offset-2 sm:min-h-6"
+        className="group/mark decoration-border hover:text-foreground active:text-foreground inline-flex min-h-11 items-center gap-1.5 underline underline-offset-2 sm:min-h-6"
       >
+        <SourceLogo source="deepswe" className="size-3" />
         DeepSWE (Datacurve)
       </a>
       <span aria-hidden="true">·</span>
@@ -14,8 +17,9 @@ export function SourceAttribution() {
         href="https://artificialanalysis.ai/"
         target="_blank"
         rel="noreferrer"
-        className="decoration-border hover:text-foreground active:text-foreground inline-flex min-h-11 items-center underline underline-offset-2 sm:min-h-6"
+        className="group/mark decoration-border hover:text-foreground active:text-foreground inline-flex min-h-11 items-center gap-1.5 underline underline-offset-2 sm:min-h-6"
       >
+        <SourceLogo source="artificialAnalysis" className="size-3" />
         Artificial Analysis
       </a>
     </p>

@@ -71,7 +71,7 @@ export function ModelPicker({
         {options.map((option) => (
           <label
             key={option.model}
-            className="focus-within:bg-muted hover:bg-muted active:bg-secondary flex min-h-11 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm transition-colors duration-200 ease-out sm:min-h-8 sm:text-xs"
+            className="group/mark focus-within:bg-muted hover:bg-muted active:bg-secondary flex min-h-11 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm transition-colors duration-200 ease-out sm:min-h-8 sm:text-xs"
           >
             <input
               type="checkbox"

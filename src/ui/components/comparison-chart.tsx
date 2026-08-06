@@ -381,7 +381,7 @@ export function ComparisonChart({
         {activePoint ? (
           <>
             <div className="mb-2 flex items-center gap-2 font-medium">
-              <ModelLogo family={activePoint.family} className="text-muted-foreground size-3.5" />
+              <ModelLogo family={activePoint.family} className="size-3.5" accent />
               {activePoint.displayName}
             </div>
             <div className="text-muted-foreground mb-2">Effort: {activePoint.effort}</div>

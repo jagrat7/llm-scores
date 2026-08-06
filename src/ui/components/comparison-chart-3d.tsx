@@ -498,7 +498,7 @@ export function ComparisonChart3D({
           {activePoint ? (
             <>
               <h2 className="mt-2 flex items-center gap-2 text-base font-semibold tracking-tight">
-                <ModelLogo family={activePoint.family} className="text-muted-foreground size-4" />
+                <ModelLogo family={activePoint.family} className="size-4" accent />
                 {activePoint.label}
               </h2>
               <dl className="mt-6 space-y-4">

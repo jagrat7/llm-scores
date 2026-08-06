@@ -1,6 +1,7 @@
 import type { Metric } from "#/ui/lib/metrics"
 import type { ProviderName } from "#/ui/lib/orpc-client"
 
+import { SourceLogo } from "#/ui/components/source-logo"
 import {
   Select,
   SelectContent,
@@ -33,8 +34,10 @@ export function SourceSelect({
 
   if (sources.length < 2) {
     return (
-      <p className="text-muted-foreground truncate px-2 text-sm sm:text-xs">
-        via {sourceLabel(value)}
+      <p className="text-muted-foreground flex items-center gap-1.5 truncate px-2 text-sm sm:text-xs">
+        <span aria-hidden="true">via</span>
+        <SourceLogo source={value} className="size-3" accent />
+        <span className="truncate">{sourceLabel(value)}</span>
       </p>
     )
   }
@@ -62,6 +65,7 @@ export function SourceSelect({
       >
         {sources.map((source) => (
           <SelectItem key={source} value={source} className={MOBILE_TOUCH_TARGET_CLASS}>
+            <SourceLogo source={source} className="size-3" />
             {sourceLabel(source)}
           </SelectItem>
         ))}

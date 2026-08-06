@@ -13,9 +13,11 @@ import { useState } from "react"
 import type { Model } from "#/ui/lib/orpc-client"
 
 import { ModelLogo } from "#/ui/components/model-logo"
+import { SourceLogo } from "#/ui/components/source-logo"
 import { INTERACTIVE_SURFACE_CLASS } from "#/ui/lib/interaction-styles"
 import { TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric } from "#/ui/lib/metrics"
+import { sourceLabel as providerLabel, uniqueSources } from "#/ui/lib/sources"
 import { cn } from "#/ui/lib/utils"
 
 const columnHelper = createColumnHelper<Model>()
@@ -26,13 +28,9 @@ const RIGHT_ALIGNED_COLUMN_IDS = new Set([
   "durationSeconds",
   "source",
 ])
-const SOURCE_NAMES = ["DeepSWE", "Artificial Analysis"] as const
 
-function sourceLabel(model: Model) {
-  const sources = new Set(Object.values(model.sources).filter(Boolean))
-  const labels = SOURCE_NAMES.filter((source) => sources.has(source))
-
-  return labels.length > 0 ? labels.join(" · ") : "—"
+function modelSources(model: Model) {
+  return uniqueSources(Object.values(model.sources))
 }
 
 function renderModelCell({ row, getValue }: { row: { original: Model }; getValue: () => string }) {
@@ -79,15 +77,27 @@ function renderScoreCell({
 }
 
 function renderSourceCell({ row }: { row: { original: Model } }) {
-  const label = sourceLabel(row.original)
+  const sources = modelSources(row.original)
+
+  if (sources.length === 0) {
+    return (
+      <span aria-label="No source available" className="text-muted-foreground text-sm sm:text-xs">
+        —
+      </span>
+    )
+  }
+
+  const label = sources.map((source) => providerLabel(source)).join(" · ")
 
   return (
     <span
-      title={label === "—" ? undefined : label}
-      aria-label={label === "—" ? "No source available" : label}
-      className="text-muted-foreground text-sm sm:text-xs"
+      title={label}
+      aria-label={label}
+      className="text-muted-foreground inline-flex items-center justify-end gap-1.5 text-sm sm:text-xs"
     >
-      {label}
+      {sources.map((source) => (
+        <SourceLogo key={source} source={source} className="size-3" />
+      ))}
     </span>
   )
 }
@@ -197,7 +207,7 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="group border-border hover:bg-muted/60 border-b last:border-b-0"
+              className="group/mark group border-border hover:bg-muted/60 border-b last:border-b-0"
             >
               {row.getVisibleCells().map((cell, index) => (
                 <td
