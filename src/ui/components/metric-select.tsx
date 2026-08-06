@@ -48,7 +48,7 @@ export function MetricSelect({
       <Select
         value={value ?? ""}
         onValueChange={(metric) => {
-          if (isMetric(metric)) onChange(metric)
+          if (metric != null && isMetric(metric)) onChange(metric)
         }}
         disabled={disabled}
       >
@@ -71,7 +71,7 @@ export function MetricSelect({
           )}
         </SelectTrigger>
         <SelectContent
-          position="popper"
+          alignItemWithTrigger={false}
           align="start"
           className="duration-200 ease-out motion-reduce:animate-none"
         >

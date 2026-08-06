@@ -24,7 +24,7 @@ export function logoBrandStyle(brand: string | undefined): LogoBrandStyle | unde
 
 /** Activates `--logo-brand` when a `group/mark` ancestor is hovered, focused, or selected. */
 export const LOGO_BRAND_ACCENT_CLASS =
-  "transition-colors duration-150 ease-out group-hover/mark:text-(--logo-brand) group-focus-within/mark:text-(--logo-brand) group-data-[highlighted]/mark:text-(--logo-brand) group-data-[state=checked]/mark:text-(--logo-brand) group-has-[:checked]/mark:text-(--logo-brand) in-[[data-slot=select-trigger]]:text-(--logo-brand)"
+  "transition-colors duration-150 ease-out group-hover/mark:text-(--logo-brand) group-focus-within/mark:text-(--logo-brand) group-data-[highlighted]/mark:text-(--logo-brand) group-data-[selected]/mark:text-(--logo-brand) group-has-[:checked]/mark:text-(--logo-brand) in-[[data-slot=select-trigger]]:text-(--logo-brand)"
 
 export function logoAccentClass(brand: string | undefined, accent: boolean) {
   if (!brand) return undefined

@@ -46,7 +46,7 @@ export function SourceSelect({
     <Select
       value={value}
       onValueChange={(source) => {
-        if (isSource(source)) onChange(source)
+        if (source != null && isSource(source)) onChange(source)
       }}
       disabled={disabled}
     >
@@ -59,7 +59,7 @@ export function SourceSelect({
         <SelectValue />
       </SelectTrigger>
       <SelectContent
-        position="popper"
+        alignItemWithTrigger={false}
         align="start"
         className="duration-200 ease-out motion-reduce:animate-none"
       >
