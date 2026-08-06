@@ -1,5 +1,17 @@
+import { Skeleton } from "#/ui/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "#/ui/components/ui/table"
+import { CHART_HEIGHT_CLASS, TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
+
 const CHART_GRID_LINES = 4
 const TABLE_SKELETON_ROWS = 10
+const HEADER_WIDTHS = ["w-40", "w-40", "w-20", "w-20", "w-20", "w-16"]
 
 export function ChartSkeleton() {
   return (
@@ -10,7 +22,7 @@ export function ChartSkeleton() {
       role="status"
     >
       <div className="border-border absolute top-10 right-10 bottom-10 left-20 overflow-hidden border-b border-l">
-        <div className="skeleton-shimmer absolute inset-0 opacity-70" />
+        <Skeleton className="absolute inset-0 rounded-none opacity-70" />
         {Array.from({ length: CHART_GRID_LINES }, (_, index) => (
           <div
             key={index}
@@ -19,8 +31,8 @@ export function ChartSkeleton() {
           />
         ))}
       </div>
-      <div className="skeleton-shimmer absolute bottom-2 left-1/2 h-3 w-24 -translate-x-1/2 rounded-sm opacity-70" />
-      <div className="skeleton-shimmer absolute top-1/2 left-2 h-24 w-3 -translate-y-1/2 rounded-sm opacity-70" />
+      <Skeleton className="absolute bottom-2 left-1/2 h-3 w-24 -translate-x-1/2 rounded-sm opacity-70" />
+      <Skeleton className="absolute top-1/2 left-2 h-24 w-3 -translate-y-1/2 rounded-sm opacity-70" />
       <span className="sr-only">Loading model data</span>
     </div>
   )
@@ -28,45 +40,43 @@ export function ChartSkeleton() {
 
 export function TableSkeleton() {
   return (
-    <div
-      data-table-frame="loading"
-      aria-label="Loading leaderboard"
-      role="status"
-      className="border-border overflow-x-auto border-y lg:overflow-x-visible"
-    >
-      <table aria-hidden="true" className={`${TABLE_WIDTH_CLASS} border-collapse text-sm`}>
-        <thead>
-          <tr className="border-border border-b">
-            {["w-40", "w-40", "w-20", "w-20", "w-20", "w-16"].map((width, index) => (
-              <th key={index} className="h-11 px-3 text-left sm:h-10">
-                <div className={`skeleton-shimmer h-3 rounded-sm opacity-70 ${width}`} />
-              </th>
+    <div data-table-frame="loading" aria-label="Loading leaderboard" role="status">
+      <Table
+        aria-hidden="true"
+        containerClassName="border-border border-y lg:overflow-x-visible"
+        className={`${TABLE_WIDTH_CLASS} border-collapse`}
+      >
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            {HEADER_WIDTHS.map((width, index) => (
+              <TableHead key={index} className="h-11 px-3 sm:h-10">
+                <Skeleton className={`h-3 rounded-sm opacity-70 ${width}`} />
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {Array.from({ length: TABLE_SKELETON_ROWS }, (_, rowIndex) => (
-            <tr key={rowIndex} className="border-border border-b last:border-b-0">
-              <td className="h-11 px-3">
-                <div className="skeleton-shimmer h-3 w-40 rounded-sm opacity-70" />
-              </td>
-              <td className="h-11 px-3">
+            <TableRow key={rowIndex} className="hover:bg-transparent">
+              <TableCell className="h-11 px-3">
+                <Skeleton className="h-3 w-40 rounded-sm opacity-70" />
+              </TableCell>
+              <TableCell className="h-11 px-3">
                 <div className="ml-auto flex w-40 items-center gap-3">
-                  <div className="skeleton-shimmer h-3 w-12 rounded-sm opacity-70" />
-                  <div className="skeleton-shimmer h-1.5 flex-1 rounded-full opacity-70" />
+                  <Skeleton className="h-3 w-12 rounded-sm opacity-70" />
+                  <Skeleton className="h-1.5 flex-1 rounded-full opacity-70" />
                 </div>
-              </td>
+              </TableCell>
               {Array.from({ length: 4 }, (_unused, cellIndex) => (
-                <td key={cellIndex} className="h-11 px-3">
-                  <div className="skeleton-shimmer ml-auto h-3 w-16 rounded-sm opacity-70" />
-                </td>
+                <TableCell key={cellIndex} className="h-11 px-3">
+                  <Skeleton className="ml-auto h-3 w-16 rounded-sm opacity-70" />
+                </TableCell>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       <span className="sr-only">Loading leaderboard rows</span>
     </div>
   )
 }
-import { CHART_HEIGHT_CLASS, TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"

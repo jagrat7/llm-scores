@@ -1,11 +1,24 @@
 import { Monitor, Moon, Sun } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { Button } from "#/ui/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "#/ui/components/ui/dropdown-menu"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { cn } from "#/ui/lib/utils"
 
 type ThemeMode = "system" | "light" | "dark"
 
-const THEME_MODES: Array<ThemeMode> = ["system", "light", "dark"]
+const THEME_MODES: Array<{ mode: ThemeMode; label: string; icon: typeof Monitor }> = [
+  { mode: "system", label: "System", icon: Monitor },
+  { mode: "light", label: "Light", icon: Sun },
+  { mode: "dark", label: "Dark", icon: Moon },
+]
 
 function isThemeMode(value: string | null): value is ThemeMode {
   return value === "system" || value === "light" || value === "dark"
@@ -47,26 +60,40 @@ export default function ThemeToggle() {
     return () => media.removeEventListener("change", handleChange)
   }, [mode])
 
-  function cycleMode() {
-    const index = THEME_MODES.indexOf(mode)
-    const nextMode = THEME_MODES[(index + 1) % THEME_MODES.length]
-    setMode(nextMode)
-    applyTheme(nextMode)
-    window.localStorage.setItem("theme", nextMode)
+  function selectMode(next: string) {
+    if (!isThemeMode(next)) return
+
+    setMode(next)
+    applyTheme(next)
+    window.localStorage.setItem("theme", next)
   }
 
-  const Icon = mode === "light" ? Sun : mode === "dark" ? Moon : Monitor
-  const nextMode = THEME_MODES[(THEME_MODES.indexOf(mode) + 1) % THEME_MODES.length]
+  const Icon = THEME_MODES.find((entry) => entry.mode === mode)?.icon ?? Monitor
 
   return (
-    <button
-      type="button"
-      onClick={cycleMode}
-      aria-label={`${mode} theme active. Switch to ${nextMode} theme`}
-      title={`${mode} theme`}
-      className={`text-muted-foreground inline-flex w-11 items-center justify-center rounded-md sm:w-8 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
-    >
-      <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={1.75} />
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Theme: ${mode}. Change theme`}
+            className={cn("text-muted-foreground w-11 sm:w-8", MOBILE_TOUCH_TARGET_CLASS)}
+          >
+            <Icon aria-hidden="true" strokeWidth={1.75} />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end" className="min-w-36">
+        <DropdownMenuRadioGroup value={mode} onValueChange={selectMode}>
+          {THEME_MODES.map(({ mode: value, label, icon: ModeIcon }) => (
+            <DropdownMenuRadioItem key={value} value={value} className={MOBILE_TOUCH_TARGET_CLASS}>
+              <ModeIcon aria-hidden="true" strokeWidth={1.75} />
+              {label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

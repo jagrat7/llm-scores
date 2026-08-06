@@ -9,9 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/ui/components/ui/select"
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRIC_CONFIG } from "#/ui/lib/metrics"
 import { isSource, sourceLabel } from "#/ui/lib/sources"
+import { cn } from "#/ui/lib/utils"
 
 /**
  * A metric published by a single provider has no choice to offer, so it reads as
@@ -53,7 +54,10 @@ export function SourceSelect({
       <SelectTrigger
         size="sm"
         aria-label={`${axis}-axis data source`}
-        className={`text-muted-foreground hover:border-input dark:hover:bg-muted gap-1.5 border-transparent bg-transparent px-2 text-sm shadow-none focus-visible:outline-none sm:text-xs dark:bg-transparent ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+        className={cn(
+          "text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground gap-1.5 border-transparent bg-transparent px-2 text-sm shadow-none sm:text-xs",
+          MOBILE_TOUCH_TARGET_CLASS,
+        )}
       >
         <span aria-hidden="true">via</span>
         <SelectValue />

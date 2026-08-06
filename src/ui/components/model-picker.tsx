@@ -1,10 +1,21 @@
-import { ChevronDown } from "lucide-react"
 import { useMemo } from "react"
 
 import type { Model } from "#/ui/lib/orpc-client"
 
 import { ModelLogo } from "#/ui/components/model-logo"
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { Badge } from "#/ui/components/ui/badge"
+import { Button } from "#/ui/components/ui/button"
+import {
+  Combobox,
+  ComboboxCollection,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "#/ui/components/ui/combobox"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { cn } from "#/ui/lib/utils"
 
 type ModelPickerProps = {
@@ -30,63 +41,53 @@ export function ModelPicker({
     [models],
   )
   const selectedSet = new Set(selected)
-
-  function toggleModel(model: string) {
-    onChange(
-      selectedSet.has(model)
-        ? selected.filter((selectedModel) => selectedModel !== model)
-        : [...selected, model],
-    )
-  }
+  const value = options.filter((option) => selectedSet.has(option.model))
 
   return (
-    <details
-      className={cn(
-        "group relative",
-        align === "center" ? "mx-auto" : "w-full",
-        disabled ? "pointer-events-none opacity-50" : null,
-      )}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") event.currentTarget.open = false
-      }}
+    <Combobox
+      items={options}
+      multiple
+      value={value}
+      onValueChange={(next: Array<Model>) => onChange(next.map((model) => model.model))}
+      itemToStringLabel={(model: Model) => model.displayName}
+      isItemEqualToValue={(item: Model, candidate: Model) => item.model === candidate.model}
+      disabled={disabled}
     >
-      <summary
-        aria-disabled={disabled}
-        tabIndex={disabled ? -1 : 0}
-        className={`border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex cursor-pointer list-none items-center gap-2 rounded-md border px-2.5 text-sm font-medium outline-none focus-visible:ring-[3px] focus-visible:outline-none sm:text-xs ${align === "center" ? "" : "justify-between"} ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
-        onClick={(event) => {
-          if (disabled) event.preventDefault()
-        }}
+      <ComboboxTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label={`Models, ${selected.length} selected`}
+            className={cn(
+              "text-foreground font-medium sm:text-xs",
+              align === "center" ? "mx-auto" : "w-full justify-between",
+              MOBILE_TOUCH_TARGET_CLASS,
+            )}
+          />
+        }
       >
-        <span className="flex items-center gap-2">
-          Models
-          <span className="text-muted-foreground">{selected.length}</span>
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className="text-muted-foreground h-3.5 w-3.5 transition-transform duration-200 ease-out group-open:rotate-180"
-        />
-      </summary>
-      <div className="border-border bg-popover text-popover-foreground absolute top-12 left-0 z-30 max-h-72 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border p-1.5 sm:top-10">
-        {options.map((option) => (
-          <label
-            key={option.model}
-            className="group/mark focus-within:bg-muted hover:bg-muted active:bg-secondary flex min-h-11 cursor-pointer items-center gap-2 rounded-sm px-2 text-sm transition-colors duration-200 ease-out sm:min-h-8 sm:text-xs"
-          >
-            <input
-              type="checkbox"
-              checked={selectedSet.has(option.model)}
-              onChange={() => toggleModel(option.model)}
-              className="accent-primary h-4 w-4 shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={disabled}
-            />
-            <ModelLogo family={option.family} className="text-muted-foreground size-3.5" />
-            <span className="truncate" title={option.displayName}>
-              {option.displayName}
-            </span>
-          </label>
-        ))}
-      </div>
-    </details>
+        Models
+        <Badge variant="secondary">{selected.length}</Badge>
+      </ComboboxTrigger>
+      <ComboboxContent align={align === "center" ? "center" : "start"} className="w-64">
+        <ComboboxInput placeholder="Search models" showTrigger={false} />
+        <ComboboxEmpty>No models found.</ComboboxEmpty>
+        <ComboboxList>
+          <ComboboxCollection>
+            {(model: Model) => (
+              <ComboboxItem
+                key={model.model}
+                value={model}
+                className={cn("group/mark sm:text-xs", MOBILE_TOUCH_TARGET_CLASS)}
+              >
+                <ModelLogo family={model.family} className="text-muted-foreground size-3.5" />
+                <span className="truncate">{model.displayName}</span>
+              </ComboboxItem>
+            )}
+          </ComboboxCollection>
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   )
 }

@@ -7,8 +7,12 @@ import type { Model, ProviderName } from "#/ui/lib/orpc-client"
 import { MetricSelect } from "#/ui/components/metric-select"
 import { ModelPicker } from "#/ui/components/model-picker"
 import { SourceSelect } from "#/ui/components/source-select"
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { Button } from "#/ui/components/ui/button"
+import { Separator } from "#/ui/components/ui/separator"
+import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRICS } from "#/ui/lib/metrics"
+import { cn } from "#/ui/lib/utils"
 
 export const AXIS_KEYS = ["x", "y", "z"] as const
 
@@ -46,16 +50,26 @@ export function AxisControls({
 
   return (
     <div className="mx-auto mb-6 grid w-full max-w-lg grid-cols-[2rem_1rem_minmax(0,1fr)_minmax(0,auto)] items-center gap-x-2 gap-y-1.5">
-      <button
-        type="button"
-        onClick={onSwapAxes}
-        className={`text-muted-foreground row-span-2 inline-flex w-8 items-center justify-center justify-self-start rounded-md ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
-        aria-label="Swap the X and Y axes"
-        title="Swap X and Y"
-        disabled={disabled}
-      >
-        <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onSwapAxes}
+              aria-label="Swap the X and Y axes"
+              disabled={disabled}
+              className={cn(
+                "text-muted-foreground row-span-2 justify-self-start",
+                MOBILE_TOUCH_TARGET_CLASS,
+              )}
+            >
+              <ArrowUpDown aria-hidden="true" />
+            </Button>
+          }
+        />
+        <TooltipContent>Swap X and Y</TooltipContent>
+      </Tooltip>
 
       {AXIS_KEYS.map((key) => {
         const { metric, source } = axes[key]
@@ -78,7 +92,7 @@ export function AxisControls({
         )
       })}
 
-      <div aria-hidden="true" className="border-border col-span-4 my-2 border-t" />
+      <Separator className="col-span-4 my-2" />
 
       <div />
       <div />

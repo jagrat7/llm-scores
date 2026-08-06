@@ -5,6 +5,7 @@ import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/reac
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
 import AppHeader from "#/ui/components/app-header"
+import { TooltipProvider } from "#/ui/components/ui/tooltip"
 
 import ClerkProvider from "../components/integrations/clerk/provider"
 import TanStackQueryDevtools from "../components/integrations/tanstack-query/devtools"
@@ -49,8 +50,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         <ClerkProvider>
-          <AppHeader />
-          {children}
+          <TooltipProvider>
+            <AppHeader />
+            {children}
+          </TooltipProvider>
           <TanStackDevtools
             config={{
               hideUntilHover: true,

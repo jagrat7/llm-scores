@@ -9,7 +9,7 @@ import type { ProviderName } from "#/ui/lib/orpc-client"
 
 import { AxisControls } from "#/ui/components/axis-controls"
 import { ChartSkeleton } from "#/ui/components/chart-skeleton"
-import { DataState } from "#/ui/components/data-state"
+import { DataError, DataState } from "#/ui/components/data-state"
 import { ModelPicker } from "#/ui/components/model-picker"
 import { PageShell } from "#/ui/components/page-shell"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
@@ -152,13 +152,10 @@ function ComparePage() {
 
       {isPending ? <ChartSkeleton /> : null}
       {isError ? (
-        <DataState className={CHART_HEIGHT_CLASS} tone="error">
-          Unable to load model data
-        </DataState>
+        <DataError className={CHART_HEIGHT_CLASS}>Unable to load model data</DataError>
       ) : null}
       {data && selected.length === 0 ? (
-        <DataState className={CHART_HEIGHT_CLASS}>
-          <p>Select models to compare</p>
+        <DataState className={CHART_HEIGHT_CLASS} title="Select models to compare">
           <ModelPicker
             models={data.models}
             selected={selected}
@@ -168,8 +165,7 @@ function ComparePage() {
         </DataState>
       ) : null}
       {data && selected.length > 0 && selectedModels.length === 0 ? (
-        <DataState className={CHART_HEIGHT_CLASS}>
-          <p>No selected models are available</p>
+        <DataState className={CHART_HEIGHT_CLASS} title="No selected models are available">
           <ModelPicker
             models={data.models}
             selected={selected}

@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
 
 import { TableSkeleton } from "#/ui/components/chart-skeleton"
-import { DataState } from "#/ui/components/data-state"
+import { DataError, DataState } from "#/ui/components/data-state"
 import { LeaderboardTable } from "#/ui/components/leaderboard-table"
 import { PageShell } from "#/ui/components/page-shell"
 import { SourceFooter } from "#/ui/components/source-attribution"
+import { Badge } from "#/ui/components/ui/badge"
 import { useModels } from "#/ui/lib/use-models"
 
 export const Route = createFileRoute("/leaderboard")({
@@ -21,19 +22,13 @@ function LeaderboardPage() {
           <h1 className="text-lg font-semibold tracking-tight">Leaderboard</h1>
           <p className="text-muted-foreground mt-1 text-xs">DeepSWE model×effort results</p>
         </div>
-        {data ? (
-          <span className="text-muted-foreground text-xs">{data.models.length} variants</span>
-        ) : null}
+        {data ? <Badge variant="secondary">{data.models.length} variants</Badge> : null}
       </div>
 
       {isPending ? <TableSkeleton /> : null}
-      {isError ? (
-        <DataState className="h-48" tone="error">
-          Unable to load model data
-        </DataState>
-      ) : null}
+      {isError ? <DataError className="h-48">Unable to load model data</DataError> : null}
       {data && data.models.length === 0 ? (
-        <DataState className="h-48">No model results are available</DataState>
+        <DataState className="h-48" title="No model results are available" />
       ) : null}
       {data && data.models.length > 0 ? <LeaderboardTable models={data.models} /> : null}
       {data ? <SourceFooter /> : null}
