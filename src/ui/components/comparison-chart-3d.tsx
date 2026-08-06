@@ -1,4 +1,4 @@
-import { Rotate3D } from "lucide-react"
+import { RiDragMove2Line } from "@remixicon/react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { Metric } from "#/ui/lib/metrics"
@@ -385,7 +385,7 @@ export function ComparisonChart3D({
             ))}
           </ButtonGroup>
           <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-10 hidden items-center gap-1.5 text-xs sm:flex">
-            <Rotate3D aria-hidden="true" className="h-3.5 w-3.5" />
+            <RiDragMove2Line aria-hidden="true" className="h-3.5 w-3.5" />
             Drag to rotate
           </p>
           <svg

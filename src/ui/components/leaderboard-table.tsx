@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
+import { RiArrowDownLine, RiArrowUpDownLine, RiArrowUpLine } from "@remixicon/react"
 import { useState } from "react"
 
 import type { Model } from "#/ui/lib/orpc-client"
@@ -182,7 +182,11 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
               const canSort = header.column.getCanSort()
               const rightAligned = RIGHT_ALIGNED_COLUMN_IDS.has(header.id)
               const SortIcon =
-                sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown
+                sorted === "asc"
+                  ? RiArrowUpLine
+                  : sorted === "desc"
+                    ? RiArrowDownLine
+                    : RiArrowUpDownLine
 
               return (
                 <TableHead

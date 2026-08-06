@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react"
+import { RiAddLine, RiCloseLine } from "@remixicon/react"
 
 import type { Metric } from "#/ui/lib/metrics"
 
@@ -58,7 +58,7 @@ export function MetricSelect({
           <span className="sr-only">{label}</span>
           {isEmpty ? (
             <span aria-hidden="true" className="flex items-center gap-2 font-semibold">
-              <Plus className="text-primary size-4" />
+              <RiAddLine className="text-primary size-4" />
               Add {axis} axis
             </span>
           ) : (
@@ -96,7 +96,7 @@ export function MetricSelect({
                 aria-label={`Remove ${axis} axis and return to the 2D chart`}
                 className={cn("text-muted-foreground", PRIMARY_TOUCH_TARGET_CLASS)}
               >
-                <X aria-hidden="true" />
+                <RiCloseLine aria-hidden="true" />
               </Button>
             }
           />

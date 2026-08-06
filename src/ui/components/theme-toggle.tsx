@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from "lucide-react"
+import { RiComputerLine, RiMoonLine, RiSunLine } from "@remixicon/react"
 import { useEffect, useState } from "react"
 
 import { Button } from "#/ui/components/ui/button"
@@ -14,10 +14,10 @@ import { cn } from "#/ui/lib/utils"
 
 type ThemeMode = "system" | "light" | "dark"
 
-const THEME_MODES: Array<{ mode: ThemeMode; label: string; icon: typeof Monitor }> = [
-  { mode: "system", label: "System", icon: Monitor },
-  { mode: "light", label: "Light", icon: Sun },
-  { mode: "dark", label: "Dark", icon: Moon },
+const THEME_MODES: Array<{ mode: ThemeMode; label: string; icon: typeof RiComputerLine }> = [
+  { mode: "system", label: "System", icon: RiComputerLine },
+  { mode: "light", label: "Light", icon: RiSunLine },
+  { mode: "dark", label: "Dark", icon: RiMoonLine },
 ]
 
 function isThemeMode(value: string | null): value is ThemeMode {
@@ -68,7 +68,7 @@ export default function ThemeToggle() {
     window.localStorage.setItem("theme", next)
   }
 
-  const Icon = THEME_MODES.find((entry) => entry.mode === mode)?.icon ?? Monitor
+  const Icon = THEME_MODES.find((entry) => entry.mode === mode)?.icon ?? RiComputerLine
 
   return (
     <DropdownMenu>

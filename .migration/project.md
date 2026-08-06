@@ -18,13 +18,26 @@ with registry components.
 Baseline before the swap: `tsc --noEmit` clean, `oxlint` clean, 1 test passing.
 Same after.
 
-## Style choice
+## Style and icon library
 
-`new-york` is legacy and has no Base UI counterpart. Of the six base styles,
-`base-vega` matches it exactly on radii (`rounded-md`), button heights
-(`h-9`/`h-8`/`h-10`) and shadow — the others shift the scale (`nova` h-8 +
-`rounded-lg`, `maia`/`luma` `rounded-4xl`, `lyra` `rounded-none`, `mira` h-7).
-So the visual identity carried over unchanged.
+Landed on `base-mira` with `remixicon`, by request.
+
+The intermediate step was `base-vega`, chosen because `new-york` is legacy
+with no Base UI counterpart and vega matched it exactly on radii
+(`rounded-md`), heights (`h-9`/`h-8`/`h-10`) and shadow. `base-mira` is
+deliberately tighter — `h-7`/`h-6`/`h-8` triggers, `text-xs/relaxed`,
+`size-3.5` icons — which suits a data-dense comparison tool. The app's own
+oklch palette in `styles.css` was never touched: only `components.json`'s
+`style` changed, so no preset CSS variables were applied over it.
+
+Icons moved from `lucide-react` to `@remixicon/react` (config key
+`remixicon`). The CLI rewrote the vendored components; app code was mapped by
+hand against the package's real exports: `ArrowUpDown`→`RiArrowUpDownLine`,
+`ArrowUp`/`ArrowDown`→`RiArrowUpLine`/`RiArrowDownLine`, `Plus`→`RiAddLine`,
+`X`→`RiCloseLine`, `Monitor`→`RiComputerLine`, `Moon`/`Sun`→`RiMoonLine`/
+`RiSunLine`, `CircleAlert`→`RiErrorWarningLine`. Remix has no 3D-rotate
+glyph, so the "Drag to rotate" hint uses `RiDragMove2Line` — the closest
+match, and a deliberate substitution rather than an equivalent.
 
 ## Components added
 
@@ -66,8 +79,11 @@ table, textarea, toggle, toggle-group, tooltip.
 
 ## Registry bugs found and patched
 
-Two classes of defect in the `base-vega` registry output, both caught in the
-browser after the first pass:
+> **These recur on every `shadcn add --overwrite`.** Both were present again
+> in the `base-mira` output and had to be re-applied. Re-check them after any
+> future component re-add.
+
+Two classes of defect in the registry output, both caught in the browser:
 
 1. **Orientation variants never match.** `separator.tsx`, `scroll-area.tsx`,
    `button-group.tsx` and `toggle-group.tsx` shipped `data-horizontal:` /

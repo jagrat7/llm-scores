@@ -1,4 +1,4 @@
-import { ArrowUpDown } from "lucide-react"
+import { RiArrowUpDownLine } from "@remixicon/react"
 
 import type { Axis } from "#/ui/components/metric-select"
 import type { Metric } from "#/ui/lib/metrics"
@@ -64,7 +64,7 @@ export function AxisControls({
                 MOBILE_TOUCH_TARGET_CLASS,
               )}
             >
-              <ArrowUpDown aria-hidden="true" />
+              <RiArrowUpDownLine aria-hidden="true" />
             </Button>
           }
         />

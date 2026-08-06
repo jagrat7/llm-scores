@@ -1,4 +1,4 @@
-import { CircleAlert } from "lucide-react"
+import { RiErrorWarningLine } from "@remixicon/react"
 
 import { Alert, AlertTitle } from "#/ui/components/ui/alert"
 import { Empty, EmptyContent, EmptyHeader, EmptyTitle } from "#/ui/components/ui/empty"
@@ -41,7 +41,7 @@ export function DataError({
   return (
     <div className={cn(FRAME_CLASS, className)}>
       <Alert variant="destructive" className="w-fit border-none">
-        <CircleAlert aria-hidden="true" />
+        <RiErrorWarningLine aria-hidden="true" />
         <AlertTitle>{children}</AlertTitle>
       </Alert>
     </div>
