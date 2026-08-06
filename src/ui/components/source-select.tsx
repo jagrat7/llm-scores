@@ -15,6 +15,14 @@ import { isSource, sourceLabel } from "#/ui/lib/sources"
 import { cn } from "#/ui/lib/utils"
 
 /**
+ * "via" is the shared left edge of every row, so it carries no padding — the
+ * inset belongs to what follows it, matching the select trigger's own `px-2`
+ * so the marks line up whether the row is a control or plain attribution.
+ */
+const VIA_ROW_CLASS = "text-muted-foreground flex items-center gap-1.5 text-sm sm:text-xs"
+const VIA_CONTENT_CLASS = "flex items-center gap-1.5 truncate px-2"
+
+/**
  * A metric published by a single provider has no choice to offer, so it reads as
  * plain attribution. Only a genuinely contested metric becomes a control.
  */
@@ -35,16 +43,18 @@ export function SourceSelect({
 
   if (sources.length < 2) {
     return (
-      <p className="text-muted-foreground flex items-center gap-1.5 truncate px-2 text-sm sm:text-xs">
+      <p className={VIA_ROW_CLASS}>
         <span aria-hidden="true">via</span>
-        <SourceLogo source={value} className="size-3" accent />
-        <span className="truncate">{sourceLabel(value)}</span>
+        <span className={cn(VIA_CONTENT_CLASS, MOBILE_TOUCH_TARGET_CLASS)}>
+          <SourceLogo source={value} className="size-3" accent />
+          <span className="truncate">{sourceLabel(value)}</span>
+        </span>
       </p>
     )
   }
 
   return (
-    <p className="text-muted-foreground flex items-center gap-1.5 text-sm sm:text-xs">
+    <p className={VIA_ROW_CLASS}>
       <span aria-hidden="true">via</span>
       <Select
         value={value}
