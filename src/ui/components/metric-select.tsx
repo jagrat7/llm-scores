@@ -62,7 +62,9 @@ export function MetricSelect({
               Add {axis} axis
             </span>
           ) : (
-            <SelectValue className="text-foreground font-semibold" />
+            <SelectValue className="text-foreground font-semibold">
+              {(selected: Metric) => METRIC_CONFIG[selected].shortLabel}
+            </SelectValue>
           )}
         </SelectTrigger>
         <SelectContent

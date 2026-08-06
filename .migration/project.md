@@ -49,6 +49,9 @@ table, textarea, toggle, toggle-group, tooltip.
 - `metric-select.tsx` — `-ml-px rounded-l-none` seam → `ButtonGroup`.
 - `axis-controls.tsx` — `<div className="border-t">` → `Separator`; swap
   control → `Button` + `Tooltip`.
+- `source-select.tsx` — "via" moved out of the trigger; it is a label for the
+  control, not part of the selected value, and it now reads the same whether
+  the metric has one source (plain prose) or several (a select).
 - `comparison-chart.tsx` — `ResponsiveContainer` → `ChartContainer`; grid and
   tick theming now come from the container's CSS instead of eight inline
   `var(--...)` props.
@@ -60,6 +63,31 @@ table, textarea, toggle, toggle-group, tooltip.
   shadcn sizes are fixed-height and the app needs a 44px target on touch that
   collapses to the compact desktop scale. Deleting them would have regressed
   every control to 32px on mobile.
+
+## Registry bugs found and patched
+
+Two classes of defect in the `base-vega` registry output, both caught in the
+browser after the first pass:
+
+1. **Orientation variants never match.** `separator.tsx`, `scroll-area.tsx`,
+   `button-group.tsx` and `toggle-group.tsx` shipped `data-horizontal:` /
+   `data-vertical:` variants, but Base UI emits `data-orientation="horizontal"`.
+   The separator in `axis-controls` therefore computed to `height: 0px` and was
+   invisible. Rewritten to `data-[orientation=horizontal]:` /
+   `data-[orientation=vertical]:` (and the `group-data-*` forms).
+2. **`SelectValue` does not clone the selected item.** Radix rendered the
+   chosen `SelectItem`'s children; Base UI's `Select.Value` resolves a label
+   from the root's `items` and otherwise falls back to the raw value. Triggers
+   regressed to `cost` / `deepswe` and lost their provider logo. Both call
+   sites now pass a function child — `metric-select.tsx` maps to
+   `METRIC_CONFIG[...].shortLabel`, `source-select.tsx` renders
+   `SourceLogo` + `sourceLabel`.
+
+Still-inert leftovers, flagged not fixed, because nothing in the app hits
+them: `toggle-group.tsx` `data-[state=on]` (Base UI Toggle emits
+`data-pressed`), `tooltip.tsx` `data-[state=delayed-open]` (dead beside a
+working `data-open` rule), `navigation-menu.tsx` `data-[state=hidden|visible]`.
+`table.tsx` `data-[state=selected]` is app-controlled and correct.
 
 ## Vendored-file customizations
 

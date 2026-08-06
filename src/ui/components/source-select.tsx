@@ -44,36 +44,46 @@ export function SourceSelect({
   }
 
   return (
-    <Select
-      value={value}
-      onValueChange={(source) => {
-        if (source != null && isSource(source)) onChange(source)
-      }}
-      disabled={disabled}
-    >
-      <SelectTrigger
-        size="sm"
-        aria-label={`${axis}-axis data source`}
-        className={cn(
-          "text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground gap-1.5 border-transparent bg-transparent px-2 text-sm shadow-none sm:text-xs",
-          MOBILE_TOUCH_TARGET_CLASS,
-        )}
+    <p className="text-muted-foreground flex items-center gap-1.5 text-sm sm:text-xs">
+      <span aria-hidden="true">via</span>
+      <Select
+        value={value}
+        onValueChange={(source) => {
+          if (source != null && isSource(source)) onChange(source)
+        }}
+        disabled={disabled}
       >
-        <span aria-hidden="true">via</span>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent
-        alignItemWithTrigger={false}
-        align="start"
-        className="duration-200 ease-out motion-reduce:animate-none"
-      >
-        {sources.map((source) => (
-          <SelectItem key={source} value={source} className={MOBILE_TOUCH_TARGET_CLASS}>
-            <SourceLogo source={source} className="size-3" />
-            {sourceLabel(source)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        <SelectTrigger
+          size="sm"
+          aria-label={`${axis}-axis data source`}
+          className={cn(
+            "text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground gap-1.5 border-transparent bg-transparent px-2 text-sm shadow-none sm:text-xs",
+            MOBILE_TOUCH_TARGET_CLASS,
+          )}
+        >
+          {/* Base UI resolves the label from the raw value, so the mark is rendered here. */}
+          <SelectValue>
+            {(selected: ProviderName) => (
+              <>
+                <SourceLogo source={selected} className="size-3" />
+                {sourceLabel(selected)}
+              </>
+            )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          alignItemWithTrigger={false}
+          align="start"
+          className="duration-200 ease-out motion-reduce:animate-none"
+        >
+          {sources.map((source) => (
+            <SelectItem key={source} value={source} className={MOBILE_TOUCH_TARGET_CLASS}>
+              <SourceLogo source={source} className="size-3" />
+              {sourceLabel(source)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </p>
   )
 }
