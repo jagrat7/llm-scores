@@ -1,3 +1,5 @@
+import type { ProviderName } from "#/ui/lib/orpc-client"
+
 export const METRICS = ["score", "cost", "speed", "duration"] as const
 
 export type Metric = (typeof METRICS)[number]
@@ -10,32 +12,50 @@ export function isMetric(value: string): value is Metric {
 
 export const METRIC_CONFIG: Record<
   Metric,
-  { label: string; shortLabel: string; unit: string; dataKey: MetricDataKey }
+  {
+    label: string
+    shortLabel: string
+    unit: string
+    dataKey: MetricDataKey
+    /** Providers publishing this metric, best first. The head is the default source. */
+    sources: ReadonlyArray<ProviderName>
+  }
 > = {
   score: {
     label: "Score",
     shortLabel: "Score",
     unit: "%",
     dataKey: "score",
+    sources: ["deepswe"],
   },
   cost: {
     label: "Cost",
     shortLabel: "Cost $/M",
     unit: "$/M tokens",
     dataKey: "costPerMTokens",
+    sources: ["artificialAnalysis", "deepswe"],
   },
   speed: {
     label: "Speed",
     shortLabel: "Tokens/s",
     unit: "tokens/s",
     dataKey: "tokensPerSecond",
+    sources: ["artificialAnalysis"],
   },
   duration: {
     label: "Duration",
     shortLabel: "Duration",
     unit: "s",
     dataKey: "durationSeconds",
+    sources: ["deepswe"],
   },
+}
+
+/** Falls back to the metric's default source, so a stale URL source never sticks. */
+export function resolveSource(metric: Metric, source: ProviderName | undefined): ProviderName {
+  const { sources } = METRIC_CONFIG[metric]
+
+  return source != null && sources.includes(source) ? source : sources[0]
 }
 
 export function formatMetric(value: number | null, metric: Metric) {

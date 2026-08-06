@@ -9,6 +9,9 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 
 import router from "#/server/orpc/router"
 
+export { PROVIDERS } from "#/server/services/provider/provider.types"
+export type { ProviderName } from "#/server/services/provider/provider.types"
+
 type AppClient = RouterClient<typeof router>
 
 export type ProviderModel = Awaited<ReturnType<AppClient["models"]["list"]>>[number]

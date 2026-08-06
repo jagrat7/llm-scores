@@ -29,16 +29,15 @@ export class ProviderDataService implements ProviderService {
   async listModels(provider: ProviderName): Promise<Array<ProviderModel>> {
     const source = await this.fetchModels(provider)
 
-    return (source.data ?? []).map(
-      ({ model, displayName, family, chartColor, isDefault, effort, effortOrder }) => ({
-        model,
-        displayName,
-        family,
-        chartColor,
-        isDefault,
-        effort,
-        effortOrder,
-      }),
+    return Array.from(
+      new Map(
+        (source.data ?? []).map(
+          ({ model, displayName, family, chartColor, isDefault, effort, effortOrder }) => [
+            `${model}:${effort}`,
+            { model, displayName, family, chartColor, isDefault, effort, effortOrder },
+          ],
+        ),
+      ).values(),
     )
   }
 

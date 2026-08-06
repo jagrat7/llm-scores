@@ -24,7 +24,6 @@
     "t3env",
     "shadcn",
     "oRPC",
-    "posthog",
     "table",
     "tanstack-query",
     "drizzle",

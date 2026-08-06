@@ -25,7 +25,7 @@
     "dist/**",
     "oldpythonref/**",
     "public/**",
-    "src/routeTree.gen.ts",
+    "src/ui/routeTree.gen.ts",
     "**/*.gen.ts"
   ],
   "rules": {
@@ -53,7 +53,7 @@
       }
     },
     {
-      "files": ["src/routes/**/*.{ts,tsx}", "src/lib/orpc-client.ts"],
+      "files": ["src/ui/routes/**/*.{ts,tsx}", "src/ui/lib/orpc-client.ts"],
       "rules": {
         "local/no-server-deep-imports": "off"
       }

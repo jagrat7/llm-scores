@@ -11,29 +11,54 @@ const DEEPSWE_LABEL = "DeepSWE"
 const ARTIFICIAL_ANALYSIS_LABEL = "Artificial Analysis"
 const EMPTY_MODELS: Array<ProviderModel> = []
 
+function getModelKey(model: ProviderModel) {
+  return `${model.model}:${model.effort}`
+}
+
+function dedupeModels(models: Array<ProviderModel>) {
+  return Array.from(new Map(models.map((model) => [getModelKey(model), model])).values())
+}
+
 export function useModels() {
   const deepswe = useQuery(orpc.models.list.queryOptions({ input: { provider: DEEPSWE } }))
   const artificialAnalysis = useQuery(
     orpc.models.list.queryOptions({ input: { provider: ARTIFICIAL_ANALYSIS } }),
   )
-  const deepsweModels = deepswe.data ?? EMPTY_MODELS
-  const artificialAnalysisModels = artificialAnalysis.data ?? EMPTY_MODELS
+  const deepsweModels = useMemo(() => dedupeModels(deepswe.data ?? EMPTY_MODELS), [deepswe.data])
+  const artificialAnalysisModels = useMemo(
+    () => dedupeModels(artificialAnalysis.data ?? EMPTY_MODELS),
+    [artificialAnalysis.data],
+  )
   const hasDeepsweModels = deepsweModels.length > 0
   const providerModels = hasDeepsweModels ? deepsweModels : artificialAnalysisModels
   const artificialAnalysisByModel = useMemo(
-    () =>
-      new Map(artificialAnalysisModels.map((model) => [`${model.model}:${model.effort}`, model])),
+    () => new Map(artificialAnalysisModels.map((model) => [getModelKey(model), model])),
     [artificialAnalysisModels],
   )
-  const artificialAnalysisMatches = providerModels.map((model) => {
-    const effort = model.effort === "max" ? "default" : model.effort
+  const artificialAnalysisMatches = useMemo(
+    () =>
+      providerModels.map((model) => {
+        const effort = model.effort === "max" ? "default" : model.effort
 
-    return (
-      artificialAnalysisByModel.get(`${model.model}:${effort}`) ??
-      artificialAnalysisByModel.get(`${model.model}:default`) ??
-      null
-    )
-  })
+        return (
+          artificialAnalysisByModel.get(`${model.model}:${effort}`) ??
+          artificialAnalysisByModel.get(`${model.model}:default`) ??
+          null
+        )
+      }),
+    [artificialAnalysisByModel, providerModels],
+  )
+  const artificialAnalysisQueryModels = useMemo(
+    () =>
+      dedupeModels(
+        artificialAnalysisMatches.filter((model): model is ProviderModel => model != null),
+      ),
+    [artificialAnalysisMatches],
+  )
+  const artificialAnalysisQueryIndex = useMemo(
+    () => new Map(artificialAnalysisQueryModels.map((model, index) => [getModelKey(model), index])),
+    [artificialAnalysisQueryModels],
+  )
   const scores = useQueries({
     queries: providerModels.map((model) => ({
       ...orpc.models.score.queryOptions({
@@ -59,28 +84,26 @@ export function useModels() {
     })),
   })
   const artificialAnalysisCosts = useQueries({
-    queries: artificialAnalysisMatches.map((model, index) => ({
-      ...orpc.models.costPerMTokens.queryOptions({
+    queries: artificialAnalysisQueryModels.map((model) =>
+      orpc.models.costPerMTokens.queryOptions({
         input: {
           provider: ARTIFICIAL_ANALYSIS,
-          model: model?.model ?? providerModels[index]?.model ?? "",
-          effort: model?.effort,
+          model: model.model,
+          effort: model.effort,
         },
       }),
-      enabled: model != null,
-    })),
+    ),
   })
   const tokensPerSecond = useQueries({
-    queries: artificialAnalysisMatches.map((model, index) => ({
-      ...orpc.models.tokensPerSecond.queryOptions({
+    queries: artificialAnalysisQueryModels.map((model) =>
+      orpc.models.tokensPerSecond.queryOptions({
         input: {
           provider: ARTIFICIAL_ANALYSIS,
-          model: model?.model ?? providerModels[index]?.model ?? "",
-          effort: model?.effort,
+          model: model.model,
+          effort: model.effort,
         },
       }),
-      enabled: model != null,
-    })),
+    ),
   })
   const metricQueries = [
     ...scores,
@@ -96,10 +119,20 @@ export function useModels() {
   const isError =
     deepswe.isError || artificialAnalysis.isError || metricQueries.some((query) => query.isError)
   const models = providerModels.map((model, index): Model => {
+    const artificialAnalysisModel = artificialAnalysisMatches[index]
+    const artificialAnalysisIndex = artificialAnalysisModel
+      ? artificialAnalysisQueryIndex.get(getModelKey(artificialAnalysisModel))
+      : undefined
     const score = scores[index]?.data ?? null
     const deepsweCost = deepsweCosts[index]?.data ?? null
-    const artificialAnalysisCost = artificialAnalysisCosts[index]?.data ?? null
-    const speed = tokensPerSecond[index]?.data ?? null
+    const artificialAnalysisCost =
+      artificialAnalysisIndex == null
+        ? null
+        : (artificialAnalysisCosts[artificialAnalysisIndex]?.data ?? null)
+    const speed =
+      artificialAnalysisIndex == null
+        ? null
+        : (tokensPerSecond[artificialAnalysisIndex]?.data ?? null)
     const duration = durations[index]?.data ?? null
 
     return {

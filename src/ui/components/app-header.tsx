@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
-import { CONTENT_WIDTH_CLASS } from "#/lib/layout-styles"
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { CONTENT_WIDTH_CLASS } from "#/ui/lib/layout-styles"
 
 import ThemeToggle from "./theme-toggle"
 
@@ -38,14 +38,6 @@ export default function AppHeader() {
           activeProps={{ className: `${NAV_LINK_CLASS} bg-muted text-foreground` }}
         >
           Leaderboard
-        </Link>
-        <Link
-          to="/graph-3d"
-          search={{ x: "cost", y: "score", z: "speed" }}
-          className={NAV_LINK_CLASS}
-          activeProps={{ className: `${NAV_LINK_CLASS} bg-muted text-foreground` }}
-        >
-          3D graph
         </Link>
         <div className="ml-auto">
           <ThemeToggle />

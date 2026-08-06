@@ -1,5 +1,3 @@
-Ignore posthog stuff for now
-
 ## Lint & format
 
 - `bun run lint` / `bun run lint:fix` — oxlint (type-aware)

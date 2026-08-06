@@ -10,12 +10,13 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { useState } from "react"
 
-import type { Model } from "#/lib/orpc-client"
+import type { Model } from "#/ui/lib/orpc-client"
 
-import { INTERACTIVE_SURFACE_CLASS } from "#/lib/interaction-styles"
-import { TABLE_WIDTH_CLASS } from "#/lib/layout-styles"
-import { formatMetric } from "#/lib/metrics"
-import { cn } from "#/lib/utils"
+import { ModelLogo } from "#/ui/components/model-logo"
+import { INTERACTIVE_SURFACE_CLASS } from "#/ui/lib/interaction-styles"
+import { TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
+import { formatMetric } from "#/ui/lib/metrics"
+import { cn } from "#/ui/lib/utils"
 
 const columnHelper = createColumnHelper<Model>()
 const RIGHT_ALIGNED_COLUMN_IDS = new Set([
@@ -34,18 +35,13 @@ function sourceLabel(model: Model) {
   return labels.length > 0 ? labels.join(" · ") : "—"
 }
 
-function renderModelCell({
-  row,
-  getValue,
-}: {
-  row: { original: Model }
-  getValue: () => string
-}) {
+function renderModelCell({ row, getValue }: { row: { original: Model }; getValue: () => string }) {
   const effortLabel = row.original.effort === "default" ? "" : ` [${row.original.effort}]`
   const modelLabel = `${getValue()}${effortLabel}`
 
   return (
-    <div className="w-48 max-w-48" title={modelLabel}>
+    <div className="flex w-48 max-w-48 items-center gap-2" title={modelLabel}>
+      <ModelLogo family={row.original.family} className="text-muted-foreground size-3.5" />
       <div className="truncate">
         <span className="text-foreground font-medium">{getValue()}</span>
         {effortLabel ? (

@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { TableSkeleton } from "#/components/chart-skeleton"
-import { DataState } from "#/components/data-state"
-import { LeaderboardTable } from "#/components/leaderboard-table"
-import { PageShell } from "#/components/page-shell"
-import { SourceFooter } from "#/components/source-attribution"
-import { useModels } from "#/lib/use-models"
+import { TableSkeleton } from "#/ui/components/chart-skeleton"
+import { DataState } from "#/ui/components/data-state"
+import { LeaderboardTable } from "#/ui/components/leaderboard-table"
+import { PageShell } from "#/ui/components/page-shell"
+import { SourceFooter } from "#/ui/components/source-attribution"
+import { useModels } from "#/ui/lib/use-models"
 
 export const Route = createFileRoute("/leaderboard")({
   component: LeaderboardPage,

@@ -69,4 +69,4 @@ export function TableSkeleton() {
     </div>
   )
 }
-import { CHART_HEIGHT_CLASS, TABLE_WIDTH_CLASS } from "#/lib/layout-styles"
+import { CHART_HEIGHT_CLASS, TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"

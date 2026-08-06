@@ -1,16 +1,24 @@
 import { Rotate3D } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
-import type { Metric } from "#/lib/metrics"
-import type { Model } from "#/lib/orpc-client"
+import type { Metric } from "#/ui/lib/metrics"
+import type { Model } from "#/ui/lib/orpc-client"
 
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
-import { formatMetric, METRIC_CONFIG } from "#/lib/metrics"
+import { ModelLogo } from "#/ui/components/model-logo"
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
+import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
 
 type Rotation = {
   pitch: number
   yaw: number
 }
+
+/**
+ * `in` grows the cube out of the flat 2D framing, `out` collapses it back,
+ * `instant` skips straight to the finished perspective for deep links.
+ */
+export type MorphPhase = "instant" | "in" | "out"
 
 type Coordinate = {
   x: number
@@ -41,9 +49,11 @@ const CUBE_MIN = -0.5
 const CUBE_MAX = 0.5
 const PERSPECTIVE_STRENGTH = 0.35
 const DEFAULT_ROTATION = { pitch: -0.42, yaw: -0.72 }
+const FLAT_ROTATION = { pitch: 0, yaw: 0 }
+const MORPH_DURATION = 460
 const VIEW_PRESETS: Record<string, Rotation> = {
   Perspective: DEFAULT_ROTATION,
-  Front: { pitch: 0, yaw: 0 },
+  Front: FLAT_ROTATION,
   Top: { pitch: -Math.PI / 2, yaw: 0 },
 }
 const AXES: Array<AxisName> = ["x", "y", "z"]
@@ -114,13 +124,32 @@ function normalizeAxis(value: number, range: { min: number; max: number }) {
   return (span === 0 ? 0.5 : (value - range.min) / span) - 0.5
 }
 
+function easeOutQuart(progress: number) {
+  return 1 - (1 - progress) ** 4
+}
+
+function lerp(from: number, to: number, progress: number) {
+  return from + (to - from) * progress
+}
+
+/** Collapses the depth axis so the cube reads as the flat 2D plot at `depthScale` 0. */
+function withDepth(coordinate: Coordinate, depthScale: number): Coordinate {
+  return { ...coordinate, z: coordinate.z * depthScale }
+}
+
 export function ComparisonChart3D({
   models,
   metrics,
+  phase = "instant",
+  onExitComplete,
 }: {
   models: Array<Model>
   metrics: Record<AxisName, Metric>
+  phase?: MorphPhase
+  onExitComplete?: () => void
 }) {
+  const reduceMotion = useReducedMotion()
+  const startsFlat = phase === "in" && !reduceMotion
   const dragRef = useRef<{
     pointerId: number
     x: number
@@ -128,9 +157,15 @@ export function ComparisonChart3D({
     rotation: Rotation
   } | null>(null)
   const frameRef = useRef(0)
-  const nextRotationRef = useRef<Rotation>(DEFAULT_ROTATION)
-  const [rotation, setRotation] = useState<Rotation>(DEFAULT_ROTATION)
+  const morphFrameRef = useRef(0)
+  const nextRotationRef = useRef<Rotation>(startsFlat ? FLAT_ROTATION : DEFAULT_ROTATION)
+  const depthScaleRef = useRef(startsFlat ? 0 : 1)
+  const exitCompleteRef = useRef(onExitComplete)
+  const [rotation, setRotation] = useState<Rotation>(nextRotationRef.current)
+  const [depthScale, setDepthScale] = useState(depthScaleRef.current)
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  exitCompleteRef.current = onExitComplete
   const chartData = useMemo(() => {
     const rawPoints = models.flatMap((model) => {
       const x = getMetricValue(model, metrics.x)
@@ -150,21 +185,23 @@ export function ComparisonChart3D({
     return { rawPoints, ranges }
   }, [metrics, models])
   const geometry = useMemo(() => {
-    const projectedVertices = CUBE_VERTICES.map((vertex) => getProjection(vertex, rotation))
+    const project = (coordinate: Coordinate) =>
+      getProjection(withDepth(coordinate, depthScale), rotation)
+    const projectedVertices = CUBE_VERTICES.map(project)
     const gridLines = GRID_STEPS.flatMap((step) => [
       [
-        getProjection({ x: CUBE_MIN, y: CUBE_MIN, z: step }, rotation),
-        getProjection({ x: CUBE_MAX, y: CUBE_MIN, z: step }, rotation),
+        project({ x: CUBE_MIN, y: CUBE_MIN, z: step }),
+        project({ x: CUBE_MAX, y: CUBE_MIN, z: step }),
       ],
       [
-        getProjection({ x: step, y: CUBE_MIN, z: CUBE_MIN }, rotation),
-        getProjection({ x: step, y: CUBE_MIN, z: CUBE_MAX }, rotation),
+        project({ x: step, y: CUBE_MIN, z: CUBE_MIN }),
+        project({ x: step, y: CUBE_MIN, z: CUBE_MAX }),
       ],
     ])
     const axisLabels: Record<AxisName, ProjectedCoordinate> = {
-      x: getProjection(AXIS_ENDPOINTS.x, rotation),
-      y: getProjection(AXIS_ENDPOINTS.y, rotation),
-      z: getProjection(AXIS_ENDPOINTS.z, rotation),
+      x: project(AXIS_ENDPOINTS.x),
+      y: project(AXIS_ENDPOINTS.y),
+      z: project(AXIS_ENDPOINTS.z),
     }
     const points = chartData.rawPoints
       .map(({ model, values }): PlotPoint => {
@@ -181,22 +218,73 @@ export function ComparisonChart3D({
           label: `${model.displayName}${effortLabel}`,
           values,
           coordinate,
-          projected: getProjection(coordinate, rotation),
+          projected: project(coordinate),
         }
       })
       .toSorted((left, right) => left.projected.depth - right.projected.depth)
 
     return { projectedVertices, gridLines, axisLabels, points }
-  }, [chartData, rotation])
+  }, [chartData, depthScale, rotation])
   const activePoint =
     geometry.points.find((point) => point.id === activeId) ?? geometry.points.at(-1) ?? null
+  const excludedCount = models.length - chartData.rawPoints.length
 
   useEffect(
     () => () => {
       cancelAnimationFrame(frameRef.current)
+      cancelAnimationFrame(morphFrameRef.current)
     },
     [],
   )
+
+  useEffect(() => {
+    if (phase === "instant") return undefined
+
+    const targetDepth = phase === "out" ? 0 : 1
+    const targetRotation = phase === "out" ? FLAT_ROTATION : DEFAULT_ROTATION
+
+    function settle() {
+      depthScaleRef.current = targetDepth
+      nextRotationRef.current = targetRotation
+      setDepthScale(targetDepth)
+      setRotation(targetRotation)
+      if (phase === "out") exitCompleteRef.current?.()
+    }
+
+    if (reduceMotion) {
+      settle()
+      return undefined
+    }
+
+    const fromDepth = depthScaleRef.current
+    const fromRotation = nextRotationRef.current
+    let startTime = 0
+
+    function step(time: number) {
+      startTime = startTime === 0 ? time : startTime
+      const progress = Math.min(1, (time - startTime) / MORPH_DURATION)
+
+      if (progress === 1) {
+        settle()
+        return
+      }
+
+      const eased = easeOutQuart(progress)
+
+      depthScaleRef.current = lerp(fromDepth, targetDepth, eased)
+      nextRotationRef.current = {
+        pitch: lerp(fromRotation.pitch, targetRotation.pitch, eased),
+        yaw: lerp(fromRotation.yaw, targetRotation.yaw, eased),
+      }
+      setDepthScale(depthScaleRef.current)
+      setRotation(nextRotationRef.current)
+      morphFrameRef.current = requestAnimationFrame(step)
+    }
+
+    morphFrameRef.current = requestAnimationFrame(step)
+
+    return () => cancelAnimationFrame(morphFrameRef.current)
+  }, [phase, reduceMotion])
 
   function updateRotation(nextRotation: Rotation) {
     nextRotationRef.current = nextRotation
@@ -208,6 +296,13 @@ export function ComparisonChart3D({
 
   function handlePointerDown(event: React.PointerEvent<SVGSVGElement>) {
     if (event.button !== 0) return
+
+    // A drag during the entrance morph wins: settle the cube and hand over control.
+    cancelAnimationFrame(morphFrameRef.current)
+    if (phase !== "out" && depthScaleRef.current !== 1) {
+      depthScaleRef.current = 1
+      setDepthScale(1)
+    }
 
     event.currentTarget.setPointerCapture(event.pointerId)
     dragRef.current = {
@@ -336,6 +431,7 @@ export function ComparisonChart3D({
                     fill="var(--foreground)"
                     fontSize={12}
                     fontWeight={600}
+                    opacity={axis === "z" ? depthScale : 1}
                     textAnchor="middle"
                     dominantBaseline="middle"
                   >
@@ -395,11 +491,16 @@ export function ComparisonChart3D({
           className="border-border w-full border-t p-5 lg:w-64 lg:border-t-0 lg:border-l"
         >
           <p className="text-muted-foreground text-xs">
-            {geometry.points.length} comparable variants
+            {excludedCount === 0
+              ? `${geometry.points.length} comparable variants`
+              : `${geometry.points.length} of ${models.length} variants have all three metrics`}
           </p>
           {activePoint ? (
             <>
-              <h2 className="mt-2 text-base font-semibold tracking-tight">{activePoint.label}</h2>
+              <h2 className="mt-2 flex items-center gap-2 text-base font-semibold tracking-tight">
+                <ModelLogo family={activePoint.family} className="text-muted-foreground size-4" />
+                {activePoint.label}
+              </h2>
               <dl className="mt-6 space-y-4">
                 {AXES.map((axis) => (
                   <div key={axis}>

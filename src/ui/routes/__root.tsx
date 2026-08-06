@@ -4,10 +4,9 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
-import AppHeader from "#/components/app-header"
+import AppHeader from "#/ui/components/app-header"
 
 import ClerkProvider from "../components/integrations/clerk/provider"
-import PostHogProvider from "../components/integrations/posthog/provider"
 import TanStackQueryDevtools from "../components/integrations/tanstack-query/devtools"
 import appCss from "../styles.css?url"
 
@@ -50,23 +49,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         <ClerkProvider>
-          <PostHogProvider>
-            <AppHeader />
-            {children}
-            <TanStackDevtools
-              config={{
-                hideUntilHover: true,
-                position: "bottom-right",
-              }}
-              plugins={[
-                {
-                  name: "Tanstack Router",
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                TanStackQueryDevtools,
-              ]}
-            />
-          </PostHogProvider>
+          <AppHeader />
+          {children}
+          <TanStackDevtools
+            config={{
+              hideUntilHover: true,
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              TanStackQueryDevtools,
+            ]}
+          />
         </ClerkProvider>
         <Scripts />
       </body>

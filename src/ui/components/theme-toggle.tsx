@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/lib/interaction-styles"
+import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 
 type ThemeMode = "system" | "light" | "dark"
 

@@ -10,12 +10,14 @@ import {
   YAxis,
 } from "recharts"
 
-import type { Metric } from "#/lib/metrics"
-import type { Model } from "#/lib/orpc-client"
+import type { Metric } from "#/ui/lib/metrics"
+import type { Model } from "#/ui/lib/orpc-client"
 
-import { DataState } from "#/components/data-state"
-import { CHART_HEIGHT_CLASS } from "#/lib/layout-styles"
-import { formatMetric, METRIC_CONFIG } from "#/lib/metrics"
+import { DataState } from "#/ui/components/data-state"
+import { ModelLogo } from "#/ui/components/model-logo"
+import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
+import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
+import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
 
 type ChartPoint = Model & {
   id: string
@@ -136,7 +138,7 @@ export function ComparisonChart({
 }) {
   const chartRef = useRef<HTMLDivElement>(null)
   const [activePoint, setActivePoint] = useState<ChartPoint | null>(null)
-  const [reduceMotion, setReduceMotion] = useState(true)
+  const reduceMotion = useReducedMotion()
   const { indexedPoints, series } = useMemo(() => {
     const xKey = METRIC_CONFIG[xMetric].dataKey
     const yKey = METRIC_CONFIG[yMetric].dataKey
@@ -190,14 +192,6 @@ export function ComparisonChart({
 
     return { indexedPoints: pointsWithIndex, series: chartSeries }
   }, [models, xMetric, yMetric])
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const update = () => setReduceMotion(media.matches)
-    update()
-    media.addEventListener("change", update)
-    return () => media.removeEventListener("change", update)
-  }, [])
 
   useEffect(() => {
     const chart = chartRef.current
@@ -386,7 +380,10 @@ export function ComparisonChart({
       >
         {activePoint ? (
           <>
-            <div className="mb-2 font-medium">{activePoint.displayName}</div>
+            <div className="mb-2 flex items-center gap-2 font-medium">
+              <ModelLogo family={activePoint.family} className="text-muted-foreground size-3.5" />
+              {activePoint.displayName}
+            </div>
             <div className="text-muted-foreground mb-2">Effort: {activePoint.effort}</div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
               <dt>{METRIC_CONFIG[xMetric].label}</dt>
