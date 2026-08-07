@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import {
-  CartesianGrid,
-  ComposedChart,
-  LabelList,
-  Line,
-  ResponsiveContainer,
-  Scatter,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { CartesianGrid, ComposedChart, LabelList, Line, Scatter, XAxis, YAxis } from "recharts"
 
 import type { Metric } from "#/ui/lib/metrics"
 import type { Model } from "#/ui/lib/orpc-client"
+import type { ChartConfig } from "#/ui/components/ui/chart"
 
 import { DataState } from "#/ui/components/data-state"
 import { ModelLogo } from "#/ui/components/model-logo"
+import { ChartContainer } from "#/ui/components/ui/chart"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
@@ -261,10 +254,14 @@ export function ComparisonChart({
     nextPoint?.focus()
   }
 
+  /** Per-model colours arrive with the data, so they stay on the marks; config carries the names. */
+  const chartConfig = {
+    xValue: { label: METRIC_CONFIG[xMetric].label },
+    yValue: { label: METRIC_CONFIG[yMetric].label },
+  } satisfies ChartConfig
+
   if (indexedPoints.length === 0) {
-    return (
-      <DataState className={CHART_HEIGHT_CLASS}>No models have both selected metrics</DataState>
-    )
+    return <DataState className={CHART_HEIGHT_CLASS} title="No models have both selected metrics" />
   }
 
   return (
@@ -274,20 +271,20 @@ export function ComparisonChart({
       data-chart-frame="loaded"
     >
       <span role="img" aria-label={chartLabel} className="sr-only" />
-      <ResponsiveContainer
-        width="100%"
-        height="100%"
+      <ChartContainer
+        config={chartConfig}
+        className="aspect-auto h-full w-full"
         initialDimension={{ width: 1200, height: 700 }}
       >
         <ComposedChart margin={CHART_MARGIN} accessibilityLayer={false}>
-          <CartesianGrid stroke="var(--border)" strokeOpacity={0.65} vertical={false} />
+          <CartesianGrid vertical={false} />
           <XAxis
             type="number"
             dataKey="xValue"
             name={METRIC_CONFIG[xMetric].label}
             domain={["auto", "auto"]}
             tickFormatter={(value) => formatMetric(Number(value), xMetric)}
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+            tick={{ fontSize: 11 }}
             tickLine={{ stroke: "var(--border)" }}
             axisLine={{ stroke: "var(--border)" }}
             label={{
@@ -304,7 +301,7 @@ export function ComparisonChart({
             name={METRIC_CONFIG[yMetric].label}
             domain={["auto", "auto"]}
             tickFormatter={(value) => formatMetric(Number(value), yMetric)}
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+            tick={{ fontSize: 11 }}
             tickLine={{ stroke: "var(--border)" }}
             axisLine={{ stroke: "var(--border)" }}
             width={Y_AXIS_WIDTH}
@@ -353,7 +350,7 @@ export function ComparisonChart({
             </Scatter>
           ))}
         </ComposedChart>
-      </ResponsiveContainer>
+      </ChartContainer>
       <div className="sr-only" aria-label="Chart points" role="group">
         {indexedPoints.map((point) => (
           <button

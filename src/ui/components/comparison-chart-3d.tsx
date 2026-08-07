@@ -1,13 +1,17 @@
-import { Rotate3D } from "lucide-react"
+import { RiDragMove2Line } from "@remixicon/react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { Metric } from "#/ui/lib/metrics"
 import type { Model } from "#/ui/lib/orpc-client"
 
+import { DataState } from "#/ui/components/data-state"
 import { ModelLogo } from "#/ui/components/model-logo"
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { Button } from "#/ui/components/ui/button"
+import { ButtonGroup } from "#/ui/components/ui/button-group"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
+import { cn } from "#/ui/lib/utils"
 
 type Rotation = {
   pitch: number
@@ -356,9 +360,10 @@ export function ComparisonChart3D({
 
   if (geometry.points.length === 0) {
     return (
-      <div className="border-border text-muted-foreground flex min-h-[32rem] items-center justify-center border-y text-sm">
-        No models have values for all three selected metrics
-      </div>
+      <DataState
+        className="min-h-[32rem]"
+        title="No models have values for all three selected metrics"
+      />
     )
   }
 
@@ -366,20 +371,21 @@ export function ComparisonChart3D({
     <div className="border-border border-y">
       <div className="flex flex-col lg:flex-row">
         <div className="bg-card relative min-w-0 flex-1">
-          <div className="bg-background absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md p-1">
+          <ButtonGroup className="bg-background absolute top-3 left-3 z-10 rounded-md">
             {Object.entries(VIEW_PRESETS).map(([label, view]) => (
-              <button
+              <Button
                 key={label}
-                type="button"
+                variant="ghost"
+                size="xs"
                 onClick={() => updateRotation(view)}
-                className={`text-muted-foreground rounded px-2.5 text-xs ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+                className={cn("text-muted-foreground", MOBILE_TOUCH_TARGET_CLASS)}
               >
                 {label}
-              </button>
+              </Button>
             ))}
-          </div>
+          </ButtonGroup>
           <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-10 hidden items-center gap-1.5 text-xs sm:flex">
-            <Rotate3D aria-hidden="true" className="h-3.5 w-3.5" />
+            <RiDragMove2Line aria-hidden="true" className="h-3.5 w-3.5" />
             Drag to rotate
           </p>
           <svg

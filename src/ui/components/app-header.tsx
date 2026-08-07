@@ -1,12 +1,23 @@
 import { Link } from "@tanstack/react-router"
 
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { buttonVariants } from "#/ui/components/ui/button"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { CONTENT_WIDTH_CLASS } from "#/ui/lib/layout-styles"
+import { cn } from "#/ui/lib/utils"
 
 import ThemeToggle from "./theme-toggle"
 
-const NAV_LINK_CLASS = `inline-flex items-center rounded-md px-2 text-sm text-muted-foreground sm:px-2.5 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
-const WORDMARK_CLASS = `mr-1 inline-flex items-center rounded-sm px-0.5 text-sm font-semibold tracking-tight text-foreground no-underline sm:mr-4 ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
+const NAV_LINK_CLASS = cn(
+  buttonVariants({ variant: "ghost", size: "sm" }),
+  "text-muted-foreground px-2 sm:px-2.5",
+  MOBILE_TOUCH_TARGET_CLASS,
+)
+const NAV_LINK_ACTIVE_CLASS = cn(NAV_LINK_CLASS, "bg-muted text-foreground")
+const WORDMARK_CLASS = cn(
+  buttonVariants({ variant: "ghost", size: "sm" }),
+  "text-foreground mr-1 px-0.5 font-semibold tracking-tight no-underline sm:mr-4",
+  MOBILE_TOUCH_TARGET_CLASS,
+)
 
 export default function AppHeader() {
   return (
@@ -28,14 +39,14 @@ export default function AppHeader() {
           search={{ x: "cost", y: "score" }}
           activeOptions={{ exact: true }}
           className={NAV_LINK_CLASS}
-          activeProps={{ className: `${NAV_LINK_CLASS} bg-muted text-foreground` }}
+          activeProps={{ className: NAV_LINK_ACTIVE_CLASS }}
         >
           Compare
         </Link>
         <Link
           to="/leaderboard"
           className={NAV_LINK_CLASS}
-          activeProps={{ className: `${NAV_LINK_CLASS} bg-muted text-foreground` }}
+          activeProps={{ className: NAV_LINK_ACTIVE_CLASS }}
         >
           Leaderboard
         </Link>

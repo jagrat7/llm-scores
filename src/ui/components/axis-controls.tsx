@@ -1,4 +1,4 @@
-import { ArrowUpDown } from "lucide-react"
+import { RiArrowUpDownLine } from "@remixicon/react"
 
 import type { Axis } from "#/ui/components/metric-select"
 import type { Metric } from "#/ui/lib/metrics"
@@ -7,8 +7,12 @@ import type { Model, ProviderName } from "#/ui/lib/orpc-client"
 import { MetricSelect } from "#/ui/components/metric-select"
 import { ModelPicker } from "#/ui/components/model-picker"
 import { SourceSelect } from "#/ui/components/source-select"
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { Button } from "#/ui/components/ui/button"
+import { Separator } from "#/ui/components/ui/separator"
+import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRICS } from "#/ui/lib/metrics"
+import { cn } from "#/ui/lib/utils"
 
 export const AXIS_KEYS = ["x", "y", "z"] as const
 
@@ -45,50 +49,65 @@ export function AxisControls({
   const hasSpareMetric = METRICS.some((metric) => !used.includes(metric))
 
   return (
-    <div className="mx-auto mb-6 grid w-full max-w-lg grid-cols-[2rem_1rem_minmax(0,1fr)_minmax(0,auto)] items-center gap-x-2 gap-y-1.5">
-      <button
-        type="button"
-        onClick={onSwapAxes}
-        className={`text-muted-foreground row-span-2 inline-flex w-8 items-center justify-center justify-self-start rounded-md ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
-        aria-label="Swap the X and Y axes"
-        title="Swap X and Y"
-        disabled={disabled}
-      >
-        <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5" />
-      </button>
-
-      {AXIS_KEYS.map((key) => {
-        const { metric, source } = axes[key]
-
-        return (
-          <AxisRow
-            key={key}
-            axis={AXIS_LABELS[key]}
-            metric={metric}
-            source={source}
-            unavailable={used.filter((candidate) => candidate !== metric)}
-            onMetricChange={(next) => onAxisChange(key, { metric: next })}
-            onSourceChange={(next) => onAxisChange(key, { source: next })}
-            onRemove={
-              key === "z" && metric != null ? () => onAxisChange(key, { metric: null }) : undefined
+    <div className="mx-auto mb-6 flex w-full max-w-lg flex-col gap-3 sm:max-w-3xl sm:flex-row sm:items-start sm:gap-4">
+      <div className="grid flex-1 grid-cols-[2rem_1rem_minmax(0,1fr)_minmax(0,auto)] items-center gap-x-2 gap-y-1.5">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onSwapAxes}
+                aria-label="Swap the X and Y axes"
+                disabled={disabled}
+                className={cn(
+                  "text-muted-foreground row-span-2 justify-self-start",
+                  MOBILE_TOUCH_TARGET_CLASS,
+                )}
+              >
+                <RiArrowUpDownLine aria-hidden="true" />
+              </Button>
             }
-            leadingSpacer={key === "z"}
-            disabled={disabled || (metric == null && !hasSpareMetric)}
           />
-        )
-      })}
+          <TooltipContent>Swap X and Y</TooltipContent>
+        </Tooltip>
 
-      <div aria-hidden="true" className="border-border col-span-4 my-2 border-t" />
+        {AXIS_KEYS.map((key) => {
+          const { metric, source } = axes[key]
 
-      <div />
-      <div />
+          return (
+            <AxisRow
+              key={key}
+              axis={AXIS_LABELS[key]}
+              metric={metric}
+              source={source}
+              unavailable={used.filter((candidate) => candidate !== metric)}
+              onMetricChange={(next) => onAxisChange(key, { metric: next })}
+              onSourceChange={(next) => onAxisChange(key, { source: next })}
+              onRemove={
+                key === "z" && metric != null
+                  ? () => onAxisChange(key, { metric: null })
+                  : undefined
+              }
+              leadingSpacer={key === "z"}
+              disabled={disabled || (metric == null && !hasSpareMetric)}
+            />
+          )
+        })}
+      </div>
+
+      {/* Orientation is a prop rather than a class, so the stacked and side-by-side
+          rules each need their own separator; only one is ever in the tree. */}
+      <Separator className="sm:hidden" />
+      <Separator orientation="vertical" className="hidden self-stretch sm:block" />
+
       <ModelPicker
         models={models}
         selected={selected}
         onChange={onSelectedChange}
         disabled={disabled}
+        className="sm:w-72"
       />
-      <div />
     </div>
   )
 }
