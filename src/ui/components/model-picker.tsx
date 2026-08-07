@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react"
 
-import { RiCloseLine, RiSearchLine } from "@remixicon/react"
+import { RiArrowDownSLine, RiCloseLine, RiSearchLine } from "@remixicon/react"
 import { useEffect, useId, useMemo, useState } from "react"
 
 import type { Model } from "#/ui/lib/orpc-client"
@@ -22,6 +22,7 @@ import {
 } from "#/ui/components/ui/combobox"
 import { InputGroupAddon } from "#/ui/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "#/ui/components/ui/popover"
+import { Skeleton } from "#/ui/components/ui/skeleton"
 import { MOBILE_TOUCH_TARGET_CLASS, PRIMARY_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { cn } from "#/ui/lib/utils"
 
@@ -42,6 +43,20 @@ const VISIBLE_CHIP_LIMIT = 5
  */
 const CHIPS_RESET_CLASS =
   "min-h-0 rounded-none border-0 bg-transparent p-0 focus-within:border-transparent focus-within:ring-0 has-data-[slot=combobox-chip]:px-0 dark:bg-transparent"
+
+/** Uneven on purpose: model names differ in length, so equal blocks read as fake. */
+const SKELETON_CHIP_WIDTHS = ["w-24", "w-32", "w-20", "w-28", "w-16"]
+
+/** Chip metrics, shared by the real chips, the overflow control and the skeletons. */
+const CHIP_HEIGHT_CLASS = "h-7 sm:h-[calc(--spacing(4.75))]"
+
+/**
+ * Mirrors `ComboboxChip`'s surface. The overflow list is portalled outside
+ * `ComboboxChips`, so those badges can't be real chips — they only have to look
+ * like them.
+ */
+const CHIP_SURFACE_CLASS =
+  "bg-muted-foreground/10 text-foreground flex w-fit items-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-xs/relaxed font-medium whitespace-nowrap"
 
 /** The chart keys its series by family colour, so these dots are its legend. */
 function ModelDot({ model }: { model: Model }) {
@@ -84,6 +99,8 @@ export function ModelPicker({
   const selectedSet = new Set(selected)
   const value = options.filter((option) => selectedSet.has(option.model))
   const hidden = value.slice(VISIBLE_CHIP_LIMIT)
+  // No models yet and the controls are locked: the request is still in flight.
+  const isLoading = disabled && models.length === 0
 
   // Emptying the list from inside the popover unmounts its own trigger, so hand
   // focus back to the search bar rather than dropping it on the document.
@@ -127,6 +144,16 @@ export function ModelPicker({
             </InputGroupAddon>
           </ComboboxInput>
         </div>
+        {isLoading ? (
+          <div aria-hidden="true" className="flex flex-wrap gap-1">
+            {SKELETON_CHIP_WIDTHS.map((width) => (
+              <Skeleton
+                key={width}
+                className={cn("rounded-[calc(var(--radius-sm)-2px)]", CHIP_HEIGHT_CLASS, width)}
+              />
+            ))}
+          </div>
+        ) : null}
         {value.length > 0 ? (
           <ComboboxChips className={CHIPS_RESET_CLASS}>
             <ComboboxValue>
@@ -135,7 +162,7 @@ export function ModelPicker({
                   {/* Chips remove by render index, so they have to stay in value order —
                       taking the head keeps every visible chip pointing at its own model. */}
                   {shown.slice(0, VISIBLE_CHIP_LIMIT).map((model) => (
-                    <ComboboxChip key={model.model} className="h-7 sm:h-[calc(--spacing(4.75))]">
+                    <ComboboxChip key={model.model} className={CHIP_HEIGHT_CLASS}>
                       <ModelDot model={model} />
                       {model.displayName}
                     </ComboboxChip>
@@ -153,26 +180,24 @@ export function ModelPicker({
                       variant="secondary"
                       size="sm"
                       aria-label={`Show ${hidden.length} more selected models`}
-                      className="h-7 sm:h-[calc(--spacing(4.75))]"
+                      className={CHIP_HEIGHT_CLASS}
                     />
                   }
                 >
                   {hidden.length} more
                   <RiArrowDownSLine aria-hidden="true" />
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-56 p-1">
-                  <ul className="flex flex-col">
+                <PopoverContent align="start" className="w-56 p-2">
+                  <ul className="flex flex-wrap gap-1">
                     {hidden.map((model) => (
-                      <li
-                        key={model.model}
-                        className="flex items-center gap-2 rounded-md px-2 py-1 text-xs"
-                      >
+                      <li key={model.model} className={cn(CHIP_SURFACE_CLASS, CHIP_HEIGHT_CLASS)}>
                         <ModelDot model={model} />
-                        <span className="flex-1 truncate">{model.displayName}</span>
+                        {model.displayName}
                         <Button
                           variant="ghost"
                           size="icon-xs"
                           aria-label={`Remove ${model.displayName}`}
+                          className="-mr-1 opacity-50 hover:opacity-100"
                           onClick={() => onChange(selected.filter((id) => id !== model.model))}
                         >
                           <RiCloseLine aria-hidden="true" />
