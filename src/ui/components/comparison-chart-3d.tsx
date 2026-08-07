@@ -11,7 +11,6 @@ import type { PlotAxis, PlotData } from "#/ui/lib/comparison-plot-data"
 import { DataState } from "#/ui/components/data-state"
 import { PointDetails, SOURCE_LEGEND } from "#/ui/components/point-details"
 import { Button } from "#/ui/components/ui/button"
-import { ButtonGroup } from "#/ui/components/ui/button-group"
 import {
   CHART_ACTIVE_SCALE,
   CHART_AXIS_TITLE_SIZE,
@@ -22,16 +21,11 @@ import {
   CHART_TOOLTIP_WIDTH,
   chartFontRem,
 } from "#/ui/lib/chart-styles"
-import {
-  axisTicks,
-  buildPlotData,
-  describeCoverage,
-  describePlot,
-} from "#/ui/lib/comparison-plot-data"
+import { axisTicks, buildPlotData, describePlot } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
-import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useThemeColors } from "#/ui/lib/theme-colors"
+import { cn } from "#/ui/lib/utils"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
 
 /**
@@ -991,28 +985,31 @@ export function ComparisonChart3D({
 
   return (
     <div ref={containerRef} className="relative" data-chart-frame="loaded">
-      <ButtonGroup className="absolute top-3 left-3 z-20">
+      {/* One quiet track with only the current view filled, so the control recedes
+          behind the plot instead of reading as three separate buttons. */}
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5">
         {Object.keys(VIEW_PRESETS).map((label) => (
           <Button
             key={label}
             size="sm"
-            variant={preset.name === label ? "secondary" : "outline"}
+            variant="ghost"
             aria-pressed={preset.name === label}
             onClick={() => setPreset((current) => ({ name: label, nonce: current.nonce + 1 }))}
-            className={MOBILE_TOUCH_TARGET_CLASS}
+            className={cn(
+              "px-2 font-normal",
+              preset.name === label
+                ? "bg-muted text-foreground font-medium"
+                : "text-muted-foreground",
+            )}
           >
             {label}
           </Button>
         ))}
-      </ButtonGroup>
+      </div>
       <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-20 hidden items-center gap-1.5 text-xs sm:flex">
         <RiDragMove2Line aria-hidden="true" className="size-3.5" />
         Drag to rotate · scroll to zoom
       </p>
-      <p className="text-muted-foreground pointer-events-none absolute right-3 bottom-3 z-20 text-xs">
-        {describeCoverage(data, models.length)}
-      </p>
-
       <div
         role="img"
         aria-label={describePlot(data)}

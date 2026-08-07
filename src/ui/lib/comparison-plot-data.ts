@@ -211,15 +211,6 @@ export function buildPlotData(models: Array<Model>, metrics: PlotMetrics): PlotD
   }
 }
 
-/** Coverage note shown on both charts, so exclusions are never silent. */
-export function describeCoverage(data: PlotData, totalModels: number) {
-  const variantNoun = data.points.length === 1 ? "variant" : "variants"
-
-  return data.excludedCount === 0
-    ? `${data.points.length} comparable ${variantNoun}`
-    : `${data.points.length} of ${totalModels} ${variantNoun} have all selected metrics`
-}
-
 /** Screen-reader summary shared by both renderers. */
 export function describePlot(data: PlotData) {
   const modelNoun = data.modelCount === 1 ? "model" : "models"

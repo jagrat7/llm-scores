@@ -23,12 +23,7 @@ import {
   CHART_TOOLTIP_GAP,
   CHART_TOOLTIP_WIDTH,
 } from "#/ui/lib/chart-styles"
-import {
-  buildPlotData,
-  describeCoverage,
-  describePlot,
-  padDomain,
-} from "#/ui/lib/comparison-plot-data"
+import { buildPlotData, describePlot, padDomain } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
@@ -462,18 +457,6 @@ export function ComparisonChart({
           >
             {METRIC_CONFIG[yMetric].label} · {METRIC_CONFIG[yMetric].unit}
           </text>
-          {/* Shares the axis-title baseline so the two read as one band. */}
-          {pinTooltip ? null : (
-            <text
-              x={width - 8}
-              y={height - 10}
-              textAnchor="end"
-              fill="var(--muted-foreground)"
-              fontSize={CHART_TICK_SIZE}
-            >
-              {describeCoverage(data, models.length)}
-            </text>
-          )}
         </svg>
       ) : null}
 
