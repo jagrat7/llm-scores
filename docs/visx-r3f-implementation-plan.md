@@ -89,15 +89,13 @@ Individual point meshes are sufficient for the current dataset. Switch to an ins
 
 ## 8. Test and validate
 
-Add focused tests for:
+check for:
 
 - Missing metrics, excluded counts, stable ordering, equal domains, and normalization.
 - Empty states and accessible chart names.
 - Keyboard navigation and focus wrapping.
 - Reduced-motion behavior and transition completion.
 - Active-point details and WebGL fallback behavior.
-
-Manually verify mouse and touch controls, presets, resizing, mobile layouts, theme switching, deep links, and adding or removing the Z axis.
 
 When implementation is authorized, run targeted tests, `bun run lint`, and `bun run fmt:check`. Do not run or build the application without separate authorization.
 

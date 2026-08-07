@@ -1,18 +1,36 @@
+import { OrbitControls } from "@react-three/drei"
+import { Canvas, invalidate, useFrame, useThree } from "@react-three/fiber"
 import { Rotate3D } from "lucide-react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type ComponentRef, useEffect, useMemo, useRef, useState } from "react"
+import * as THREE from "three"
 
 import type { Metric } from "#/ui/lib/metrics"
 import type { Model } from "#/ui/lib/orpc-client"
+import type { PlotAxis, PlotData } from "#/ui/lib/comparison-plot-data"
 
-import { ModelLogo } from "#/ui/components/model-logo"
+import { DataState } from "#/ui/components/data-state"
+import { PointDetails, SOURCE_LEGEND } from "#/ui/components/point-details"
+import {
+  CHART_ACTIVE_SCALE,
+  CHART_AXIS_TITLE_SIZE,
+  CHART_GRID_OPACITY,
+  CHART_POINT_LABEL_SIZE,
+  CHART_TICK_SIZE,
+  CHART_TOOLTIP_GAP,
+  CHART_TOOLTIP_WIDTH,
+  chartFontRem,
+} from "#/ui/lib/chart-styles"
+import {
+  axisTicks,
+  buildPlotData,
+  describeCoverage,
+  describePlot,
+} from "#/ui/lib/comparison-plot-data"
+import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
 import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
+import { useThemeColors } from "#/ui/lib/theme-colors"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
-
-type Rotation = {
-  pitch: number
-  yaw: number
-}
 
 /**
  * `in` grows the cube out of the flat 2D framing, `out` collapses it back,
@@ -20,121 +38,798 @@ type Rotation = {
  */
 export type MorphPhase = "instant" | "in" | "out"
 
-type Coordinate = {
-  x: number
-  y: number
-  z: number
+type SphericalView = { yaw: number; pitch: number; radius: number }
+
+type LabelItem = {
+  key: string
+  text: string
+  kind: "axis" | "tick" | "point"
+  /** Fixed world anchor; points carry one, axis labels resolve theirs per frame. */
+  base?: THREE.Vector3
+  /** Axis-attached labels ride whichever edge is currently outermost. */
+  axis?: PlotAxis
+  fraction?: number
+  pointId?: string
+  fadeWithDepth?: boolean
+  /** Pixels to push the label perpendicular to its axis, away from the cube. */
+  screenOffset?: number
 }
 
-type ProjectedCoordinate = Coordinate & {
+/** Which side of each perpendicular axis an edge sits on, as -1 or 1. */
+type EdgeSigns = Record<PlotAxis, number>
+
+/** Shared mutable scene state, kept off React so camera frames never rerender. */
+type SceneRefs = {
   depth: number
-  scale: number
+  activeId: string | null
 }
 
-type PlotPoint = Model & {
-  id: string
-  label: string
-  values: Record<"x" | "y" | "z", number>
-  coordinate: Coordinate
-  projected: ProjectedCoordinate
+type PlotControls = ComponentRef<typeof OrbitControls>
+
+const AXES = ["x", "y", "z"] as const
+const CUBE_HALF = 1
+/** Tuned so a point reads at the 2D chart's 10px diameter from the default camera. */
+const POINT_RADIUS = 0.026
+const ACTIVE_POINT_SCALE = CHART_ACTIVE_SCALE
+const MORPH_DURATION = 0.7
+const PRESET_DURATION = 0.55
+const VIEW_RADIUS = 5.4
+const ORBIT_VIEW: SphericalView = { yaw: 0.72, pitch: 0.42, radius: VIEW_RADIUS }
+/** The camera framing the cube collapses into, matched to the flat 2D plot. */
+const MORPH_VIEW: SphericalView = { yaw: 0, pitch: 0, radius: 4 }
+const VIEW_PRESETS: Record<string, SphericalView> = {
+  Perspective: ORBIT_VIEW,
+  Front: { yaw: 0, pitch: 0, radius: VIEW_RADIUS },
+  Top: { yaw: 0, pitch: Math.PI / 2 - 0.02, radius: VIEW_RADIUS },
+}
+const TICK_TARGET = 6
+/** Same type scale the 2D chart's SVG axes use. */
+const LABEL_SIZES: Record<LabelItem["kind"], number> = {
+  axis: CHART_AXIS_TITLE_SIZE,
+  tick: CHART_TICK_SIZE,
+  point: CHART_POINT_LABEL_SIZE,
+}
+/**
+ * Label distances are pixels, not world units. A world-space offset is scaled by
+ * perspective, so near labels drift further out than far ones and the column stops
+ * reading as a straight line beside the axis.
+ */
+const TICK_LABEL_PIXELS = 20
+const AXIS_TITLE_PIXELS = 54
+const POINT_LABEL_MIN_WIDTH = 640
+const LABEL_GAP = 4
+/** Lifts the card so it sits beside the point rather than under the cursor. */
+const TOOLTIP_RISE = 56
+const TOOLTIP_SAFE_BOTTOM = 190
+
+function viewPosition(view: SphericalView, target = new THREE.Vector3()) {
+  const horizontal = view.radius * Math.cos(view.pitch)
+
+  return target.set(
+    horizontal * Math.sin(view.yaw),
+    view.radius * Math.sin(view.pitch),
+    horizontal * Math.cos(view.yaw),
+  )
 }
 
-type AxisName = "x" | "y" | "z"
-
-const VIEW_WIDTH = 960
-const VIEW_HEIGHT = 620
-const PLOT_CENTER = { x: VIEW_WIDTH / 2, y: VIEW_HEIGHT / 2 + 12 }
-const PLOT_SCALE = 420
-const CUBE_MIN = -0.5
-const CUBE_MAX = 0.5
-const PERSPECTIVE_STRENGTH = 0.35
-const DEFAULT_ROTATION = { pitch: -0.42, yaw: -0.72 }
-const FLAT_ROTATION = { pitch: 0, yaw: 0 }
-const MORPH_DURATION = 460
-const VIEW_PRESETS: Record<string, Rotation> = {
-  Perspective: DEFAULT_ROTATION,
-  Front: FLAT_ROTATION,
-  Top: { pitch: -Math.PI / 2, yaw: 0 },
-}
-const AXES: Array<AxisName> = ["x", "y", "z"]
-const CUBE_VERTICES: Array<Coordinate> = [
-  { x: CUBE_MIN, y: CUBE_MIN, z: CUBE_MIN },
-  { x: CUBE_MAX, y: CUBE_MIN, z: CUBE_MIN },
-  { x: CUBE_MAX, y: CUBE_MAX, z: CUBE_MIN },
-  { x: CUBE_MIN, y: CUBE_MAX, z: CUBE_MIN },
-  { x: CUBE_MIN, y: CUBE_MIN, z: CUBE_MAX },
-  { x: CUBE_MAX, y: CUBE_MIN, z: CUBE_MAX },
-  { x: CUBE_MAX, y: CUBE_MAX, z: CUBE_MAX },
-  { x: CUBE_MIN, y: CUBE_MAX, z: CUBE_MAX },
-]
-const CUBE_EDGES = [
-  [0, 1],
-  [1, 2],
-  [2, 3],
-  [3, 0],
-  [4, 5],
-  [5, 6],
-  [6, 7],
-  [7, 4],
-  [0, 4],
-  [1, 5],
-  [2, 6],
-  [3, 7],
-] as const
-const AXIS_ENDPOINTS: Record<AxisName, Coordinate> = {
-  x: { x: CUBE_MAX + 0.14, y: CUBE_MIN, z: CUBE_MIN },
-  y: { x: CUBE_MIN, y: CUBE_MAX + 0.14, z: CUBE_MIN },
-  z: { x: CUBE_MIN, y: CUBE_MIN, z: CUBE_MAX + 0.14 },
-}
-const GRID_STEPS = [-0.25, 0, 0.25]
-
-function getProjection(coordinate: Coordinate, rotation: Rotation): ProjectedCoordinate {
-  const cosYaw = Math.cos(rotation.yaw)
-  const sinYaw = Math.sin(rotation.yaw)
-  const cosPitch = Math.cos(rotation.pitch)
-  const sinPitch = Math.sin(rotation.pitch)
-  const rotatedX = coordinate.x * cosYaw - coordinate.z * sinYaw
-  const rotatedZ = coordinate.x * sinYaw + coordinate.z * cosYaw
-  const rotatedY = coordinate.y * cosPitch - rotatedZ * sinPitch
-  const depth = coordinate.y * sinPitch + rotatedZ * cosPitch
-  const scale = 1 / (1 + depth * PERSPECTIVE_STRENGTH)
-
-  return {
-    x: PLOT_CENTER.x + rotatedX * PLOT_SCALE * scale,
-    y: PLOT_CENTER.y - rotatedY * PLOT_SCALE * scale,
-    z: coordinate.z,
-    depth,
-    scale,
-  }
-}
-
-function getMetricValue(model: Model, metric: Metric) {
-  const value = model[METRIC_CONFIG[metric].dataKey]
-
-  return typeof value === "number" ? value : null
-}
-
-function axisRange(rawPoints: Array<{ values: Record<AxisName, number> }>, axis: AxisName) {
-  const values = rawPoints.map((point) => point.values[axis])
-  return { min: Math.min(...values), max: Math.max(...values) }
-}
-
-function normalizeAxis(value: number, range: { min: number; max: number }) {
-  const span = range.max - range.min
-  return (span === 0 ? 0.5 : (value - range.min) / span) - 0.5
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
 }
 
 function easeOutQuart(progress: number) {
   return 1 - (1 - progress) ** 4
 }
 
-function lerp(from: number, to: number, progress: number) {
-  return from + (to - from) * progress
+function unitToScene(unit: number) {
+  return (unit - 0.5) * 2 * CUBE_HALF
 }
 
-/** Collapses the depth axis so the cube reads as the flat 2D plot at `depthScale` 0. */
-function withDepth(coordinate: Coordinate, depthScale: number): Coordinate {
-  return { ...coordinate, z: coordinate.z * depthScale }
+const SIGN_PAIRS = [
+  [-1, -1],
+  [-1, 1],
+  [1, -1],
+  [1, 1],
+] as const
+
+/** A point at `fraction` along one of the four cube edges parallel to `axis`. */
+function edgePoint(
+  axis: PlotAxis,
+  fraction: number,
+  signs: EdgeSigns,
+  depth: number,
+  target: THREE.Vector3,
+) {
+  const [first, second] = WALL_PLANE[axis]
+  const coordinate: EdgeSigns = { x: 0, y: 0, z: 0 }
+
+  coordinate[axis] = unitToScene(fraction)
+  coordinate[first] = signs[first] * CUBE_HALF
+  coordinate[second] = signs[second] * CUBE_HALF
+
+  return target.set(coordinate.x, coordinate.y, coordinate.z * depth)
+}
+
+function supportsWebGL() {
+  try {
+    const canvas = document.createElement("canvas")
+
+    return Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"))
+  } catch {
+    return false
+  }
+}
+
+/** Ticks sitting on the frame itself would z-fight with the cube edges. */
+function interior(fraction: number) {
+  return fraction > 0.001 && fraction < 0.999
+}
+
+/** The two in-plane axes for a wall named by its normal. */
+const WALL_PLANE: Record<PlotAxis, [PlotAxis, PlotAxis]> = {
+  x: ["y", "z"],
+  y: ["x", "z"],
+  z: ["x", "y"],
+}
+const WALL_SIDES = [-1, 1] as const
+
+/**
+ * One wall's grid, ruled at the same tick values the axis labels use so every line
+ * lands on a labelled value.
+ */
+function wallGridPositions(
+  normal: PlotAxis,
+  side: number,
+  fractions: Record<PlotAxis, Array<number>>,
+) {
+  const positions: Array<number> = []
+  const [first, second] = WALL_PLANE[normal]
+  const vertex = (firstValue: number, secondValue: number) => {
+    const coordinate: Record<PlotAxis, number> = { x: 0, y: 0, z: 0 }
+
+    coordinate[normal] = side * CUBE_HALF
+    coordinate[first] = firstValue
+    coordinate[second] = secondValue
+
+    positions.push(coordinate.x, coordinate.y, coordinate.z)
+  }
+
+  for (const fraction of fractions[first].filter(interior)) {
+    vertex(unitToScene(fraction), -CUBE_HALF)
+    vertex(unitToScene(fraction), CUBE_HALF)
+  }
+
+  for (const fraction of fractions[second].filter(interior)) {
+    vertex(-CUBE_HALF, unitToScene(fraction))
+    vertex(CUBE_HALF, unitToScene(fraction))
+  }
+
+  return new Float32Array(positions)
+}
+
+function PlotFrame({
+  borderColor,
+  gridFractions,
+  scene,
+}: {
+  borderColor: string
+  gridFractions: Record<PlotAxis, Array<number>>
+  scene: React.RefObject<SceneRefs>
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  const wallRefs = useRef<Array<THREE.LineSegments | null>>([])
+  const appliedDepth = useRef(-1)
+  const box = useMemo(() => new THREE.BoxGeometry(2 * CUBE_HALF, 2 * CUBE_HALF, 2 * CUBE_HALF), [])
+  const walls = useMemo(
+    () =>
+      AXES.flatMap((normal) =>
+        WALL_SIDES.map((side) => {
+          const geometry = new THREE.BufferGeometry()
+
+          geometry.setAttribute(
+            "position",
+            new THREE.BufferAttribute(wallGridPositions(normal, side, gridFractions), 3),
+          )
+
+          return { key: `${normal}${side}`, normal, side, geometry }
+        }),
+      ),
+    [gridFractions],
+  )
+
+  useEffect(
+    () => () => {
+      box.dispose()
+      for (const wall of walls) wall.geometry.dispose()
+    },
+    [box, walls],
+  )
+
+  useFrame((state) => {
+    const group = groupRef.current
+
+    if (group && appliedDepth.current !== scene.current.depth) {
+      appliedDepth.current = scene.current.depth
+      group.scale.z = Math.max(scene.current.depth, 0.0001)
+    }
+
+    // Only the walls the camera looks at from behind stay ruled, so the grid always
+    // sits as a backdrop rather than crossing in front of the data.
+    for (const [index, wall] of walls.entries()) {
+      const node = wallRefs.current[index]
+
+      if (node) node.visible = state.camera.position[wall.normal] * wall.side < 0
+    }
+  })
+
+  return (
+    <group ref={groupRef}>
+      <lineSegments>
+        <edgesGeometry args={[box]} />
+        <lineBasicMaterial color={borderColor} />
+      </lineSegments>
+      {walls.map((wall, index) => (
+        <lineSegments
+          key={wall.key}
+          ref={(node) => {
+            wallRefs.current[index] = node
+          }}
+          geometry={wall.geometry}
+          visible={false}
+        >
+          <lineBasicMaterial color={borderColor} transparent opacity={CHART_GRID_OPACITY} />
+        </lineSegments>
+      ))}
+    </group>
+  )
+}
+
+function PlotPoints({
+  data,
+  positions,
+  haloColor,
+  resolveColor,
+  scene,
+  onActivate,
+}: {
+  data: PlotData
+  positions: Array<THREE.Vector3>
+  haloColor: string
+  resolveColor: (value: string) => string
+  scene: React.RefObject<SceneRefs>
+  onActivate: (id: string | null) => void
+}) {
+  const meshesRef = useRef<Array<THREE.Mesh | null>>([])
+  const haloRef = useRef<THREE.Mesh>(null)
+  const appliedDepth = useRef(-1)
+  const geometry = useMemo(() => new THREE.SphereGeometry(POINT_RADIUS, 24, 16), [])
+  const haloGeometry = useMemo(() => new THREE.SphereGeometry(POINT_RADIUS * 1.75, 24, 16), [])
+  const materials = useMemo(() => {
+    const byColor = new Map<string, THREE.MeshBasicMaterial>()
+
+    for (const point of data.points) {
+      if (byColor.has(point.color)) continue
+      byColor.set(point.color, new THREE.MeshBasicMaterial({ color: resolveColor(point.color) }))
+    }
+
+    return byColor
+  }, [data, resolveColor])
+  // `<line>` collides with the SVG intrinsic element, so the runs are plain three
+  // objects mounted through `<primitive>`.
+  const seriesLines = useMemo(
+    () =>
+      data.series
+        .filter((series) => series.points.length > 1)
+        .map((series) => {
+          const bufferGeometry = new THREE.BufferGeometry()
+          const attribute = new THREE.BufferAttribute(new Float32Array(series.points.length * 3), 3)
+
+          bufferGeometry.setAttribute("position", attribute)
+
+          const object = new THREE.Line(
+            bufferGeometry,
+            new THREE.LineBasicMaterial({
+              color: resolveColor(series.color),
+              transparent: true,
+              opacity: 0.55,
+            }),
+          )
+
+          object.visible = false
+
+          return { series, object, attribute }
+        }),
+    [data, resolveColor],
+  )
+  useEffect(
+    () => () => {
+      geometry.dispose()
+      haloGeometry.dispose()
+      for (const material of materials.values()) material.dispose()
+      for (const entry of seriesLines) {
+        entry.object.geometry.dispose()
+        entry.object.material.dispose()
+      }
+    },
+    [geometry, haloGeometry, materials, seriesLines],
+  )
+
+  useFrame(() => {
+    const depth = scene.current.depth
+    const activeId = scene.current.activeId
+    let needsFrame = false
+
+    if (appliedDepth.current !== depth) {
+      appliedDepth.current = depth
+
+      for (const [index, mesh] of meshesRef.current.entries()) {
+        const position = positions[index]
+
+        if (mesh && position) mesh.position.set(position.x, position.y, position.z * depth)
+      }
+
+      for (const entry of seriesLines) {
+        for (const [pointIndex, point] of entry.series.points.entries()) {
+          const position = positions[point.index]
+
+          entry.attribute.setXYZ(pointIndex, position.x, position.y, position.z * depth)
+        }
+        entry.attribute.needsUpdate = true
+        entry.object.geometry.computeBoundingSphere()
+        entry.object.visible = true
+      }
+    }
+
+    // Hover growth eases in refs so a hovered point never triggers a React render loop.
+    for (const [index, mesh] of meshesRef.current.entries()) {
+      if (!mesh) continue
+
+      const target = data.points[index]?.id === activeId ? ACTIVE_POINT_SCALE : 1
+      const next = THREE.MathUtils.lerp(mesh.scale.x, target, 0.24)
+
+      if (Math.abs(next - target) < 0.002) mesh.scale.setScalar(target)
+      else {
+        mesh.scale.setScalar(next)
+        needsFrame = true
+      }
+    }
+
+    const halo = haloRef.current
+
+    if (halo) {
+      const activeIndex = activeId == null ? -1 : (data.pointById.get(activeId)?.index ?? -1)
+      const position = activeIndex === -1 ? null : positions[activeIndex]
+
+      halo.visible = position != null
+      if (position) halo.position.set(position.x, position.y, position.z * depth)
+    }
+
+    if (needsFrame) invalidate()
+  })
+
+  return (
+    <group>
+      {seriesLines.map((entry) => (
+        <primitive key={entry.series.key} object={entry.object} />
+      ))}
+
+      {data.points.map((point, index) => (
+        <mesh
+          key={point.id}
+          ref={(node) => {
+            meshesRef.current[index] = node
+          }}
+          geometry={geometry}
+          material={materials.get(point.color)}
+          position={[
+            positions[index].x,
+            positions[index].y,
+            positions[index].z * scene.current.depth,
+          ]}
+          onPointerOver={(event) => {
+            event.stopPropagation()
+            document.body.style.cursor = "pointer"
+            onActivate(point.id)
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = ""
+            onActivate(null)
+          }}
+          onClick={(event) => {
+            event.stopPropagation()
+            onActivate(point.id)
+          }}
+        />
+      ))}
+
+      <mesh ref={haloRef} geometry={haloGeometry} visible={false}>
+        <meshBasicMaterial color={haloColor} transparent opacity={0.3} side={THREE.BackSide} />
+      </mesh>
+    </group>
+  )
+}
+
+/**
+ * Owns every animated camera value. Runs entirely on refs and `invalidate()`, so the
+ * WebGL loop stops the moment the cube settles.
+ */
+function CameraDirector({
+  controls,
+  onExitComplete,
+  phase,
+  preset,
+  reduceMotion,
+  scene,
+}: {
+  controls: React.RefObject<PlotControls | null>
+  onExitComplete?: () => void
+  phase: MorphPhase
+  /** The nonce re-fires the tween when the same preset is picked again after a drag. */
+  preset: { name: string; nonce: number }
+  reduceMotion: boolean
+  scene: React.RefObject<SceneRefs>
+}) {
+  const camera = useThree((state) => state.camera)
+  const exitCompleteRef = useRef(onExitComplete)
+  const firstPreset = useRef(true)
+  const tween = useRef({
+    active: false,
+    elapsed: 0,
+    duration: MORPH_DURATION,
+    from: new THREE.Vector3(),
+    to: new THREE.Vector3(),
+    fromDepth: 1,
+    toDepth: 1,
+    settlesFlat: false,
+  })
+
+  exitCompleteRef.current = onExitComplete
+
+  function start(view: SphericalView, depth: number, duration: number, settlesFlat = false) {
+    const current = tween.current
+
+    current.from.copy(camera.position)
+    viewPosition(view, current.to)
+    current.fromDepth = scene.current.depth
+    current.toDepth = depth
+    current.elapsed = 0
+    current.duration = duration
+    current.settlesFlat = settlesFlat
+    current.active = true
+    invalidate()
+  }
+
+  function settle(view: SphericalView, depth: number) {
+    viewPosition(view, camera.position)
+    camera.lookAt(0, 0, 0)
+    scene.current.depth = depth
+    controls.current?.update()
+    invalidate()
+  }
+
+  useEffect(() => {
+    if (phase === "instant") return
+
+    const view = phase === "out" ? MORPH_VIEW : ORBIT_VIEW
+    const depth = phase === "out" ? 0 : 1
+
+    if (reduceMotion) {
+      settle(view, depth)
+      if (phase === "out") exitCompleteRef.current?.()
+      return
+    }
+
+    start(view, depth, MORPH_DURATION, phase === "out")
+    // The tween reads the live camera, so only the phase should restart it.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, reduceMotion])
+
+  useEffect(() => {
+    // The mounted camera already sits at its preset; only later picks should animate.
+    if (firstPreset.current) {
+      firstPreset.current = false
+      return
+    }
+
+    const view = VIEW_PRESETS[preset.name]
+
+    if (!view) return
+
+    // A preset picked mid-entrance wins, and still finishes opening the cube.
+    const targetDepth = phase === "out" ? 0 : 1
+
+    if (reduceMotion) {
+      settle(view, targetDepth)
+      return
+    }
+
+    start(view, targetDepth, PRESET_DURATION)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [preset])
+
+  useFrame((_state, delta) => {
+    const current = tween.current
+
+    if (!current.active) return
+
+    current.elapsed += delta
+    const progress = Math.min(1, current.elapsed / current.duration)
+    const eased = easeOutQuart(progress)
+
+    if (controls.current) controls.current.enabled = false
+    camera.position.lerpVectors(current.from, current.to, eased)
+    camera.lookAt(0, 0, 0)
+    scene.current.depth = current.fromDepth + (current.toDepth - current.fromDepth) * eased
+
+    if (progress === 1) {
+      current.active = false
+      if (controls.current) {
+        controls.current.enabled = true
+        controls.current.update()
+      }
+      if (current.settlesFlat) exitCompleteRef.current?.()
+    }
+
+    invalidate()
+  })
+
+  return null
+}
+
+/**
+ * Picks which of the four cube edges parallel to `axis` currently sits furthest
+ * outside the silhouette, measured perpendicular to the axis on screen. That is the
+ * edge the back-wall grid lines run to, so labels track the walls as they flip.
+ */
+function chooseAxisEdge(
+  axis: PlotAxis,
+  depth: number,
+  camera: THREE.Camera,
+  width: number,
+  height: number,
+  centerX: number,
+  centerY: number,
+  probeStart: THREE.Vector3,
+  probeEnd: THREE.Vector3,
+  out: EdgeSigns,
+) {
+  const [first, second] = WALL_PLANE[axis]
+  const candidate: EdgeSigns = { x: 0, y: 0, z: 0 }
+  let bestDistance = -Infinity
+
+  for (const [firstSign, secondSign] of SIGN_PAIRS) {
+    candidate[first] = firstSign
+    candidate[second] = secondSign
+
+    edgePoint(axis, 0, candidate, depth, probeStart).project(camera)
+    edgePoint(axis, 1, candidate, depth, probeEnd).project(camera)
+
+    const startX = (probeStart.x * 0.5 + 0.5) * width
+    const startY = (-probeStart.y * 0.5 + 0.5) * height
+    const endX = (probeEnd.x * 0.5 + 0.5) * width
+    const endY = (-probeEnd.y * 0.5 + 0.5) * height
+    const deltaX = endX - startX
+    const deltaY = endY - startY
+    const length = Math.hypot(deltaX, deltaY) || 1
+    // Displacement along the axis is the same for every candidate, so only the
+    // perpendicular component separates them.
+    const distance = Math.abs(
+      (-deltaY / length) * ((startX + endX) / 2 - centerX) +
+        (deltaX / length) * ((startY + endY) / 2 - centerY),
+    )
+
+    if (distance > bestDistance) {
+      bestDistance = distance
+      out[first] = firstSign
+      out[second] = secondSign
+      out[axis] = 0
+    }
+  }
+}
+
+/**
+ * Projects label anchors to screen space and writes transforms straight to the DOM.
+ * Keeping text in HTML gives crisp theme typography without an `<Html>` per point and
+ * without a React render per frame.
+ */
+function LabelProjector({
+  items,
+  nodes,
+  scene,
+}: {
+  items: Array<LabelItem>
+  nodes: React.RefObject<Array<HTMLElement | null>>
+  scene: React.RefObject<SceneRefs>
+}) {
+  const sizes = useRef<Array<[number, number] | null>>([])
+  const anchor = useMemo(() => new THREE.Vector3(), [])
+  const alongStart = useMemo(() => new THREE.Vector3(), [])
+  const alongEnd = useMemo(() => new THREE.Vector3(), [])
+  const origin = useMemo(() => new THREE.Vector3(), [])
+  const probeStart = useMemo(() => new THREE.Vector3(), [])
+  const probeEnd = useMemo(() => new THREE.Vector3(), [])
+  const edges = useMemo<Record<PlotAxis, EdgeSigns>>(
+    () => ({ x: { x: 0, y: 0, z: 0 }, y: { x: 0, y: 0, z: 0 }, z: { x: 0, y: 0, z: 0 } }),
+    [],
+  )
+
+  useEffect(() => {
+    sizes.current = items.map(() => null)
+    invalidate()
+  }, [items])
+
+  useFrame((state) => {
+    const depth = scene.current.depth
+    const activeId = scene.current.activeId
+    const { width, height } = state.size
+    const placed: Array<{ left: number; right: number; top: number; bottom: number }> = []
+
+    origin.set(0, 0, 0).project(state.camera)
+    const centerX = (origin.x * 0.5 + 0.5) * width
+    const centerY = (-origin.y * 0.5 + 0.5) * height
+
+    for (const axis of AXES) {
+      chooseAxisEdge(
+        axis,
+        depth,
+        state.camera,
+        width,
+        height,
+        centerX,
+        centerY,
+        probeStart,
+        probeEnd,
+        edges[axis],
+      )
+    }
+
+    const order = items
+      .map((item, index) => {
+        const signs = item.axis == null ? null : edges[item.axis]
+
+        if (item.axis != null && signs) {
+          edgePoint(item.axis, item.fraction ?? 0.5, signs, depth, anchor)
+        } else if (item.base) {
+          anchor.set(item.base.x, item.base.y, item.base.z * depth)
+        }
+        anchor.project(state.camera)
+
+        let screenX = (anchor.x * 0.5 + 0.5) * width
+        let screenY = (-anchor.y * 0.5 + 0.5) * height
+        let angle = 0
+
+        if (item.axis != null && signs) {
+          edgePoint(item.axis, 0, signs, depth, alongStart).project(state.camera)
+          edgePoint(item.axis, 1, signs, depth, alongEnd).project(state.camera)
+
+          const deltaX = (alongEnd.x - alongStart.x) * 0.5 * width
+          const deltaY = -(alongEnd.y - alongStart.y) * 0.5 * height
+          const length = Math.hypot(deltaX, deltaY) || 1
+          // Perpendicular to the axis in screen space, pointing away from the cube.
+          const awayX = -deltaY / length
+          const awayY = deltaX / length
+          const sign = awayX * (screenX - centerX) + awayY * (screenY - centerY) >= 0 ? 1 : -1
+          const distance = item.screenOffset ?? 0
+
+          screenX += awayX * sign * distance
+          screenY += awayY * sign * distance
+
+          if (item.kind === "axis") {
+            const tilt = (Math.atan2(deltaY, deltaX) * 180) / Math.PI
+
+            // Flip past vertical so the title never reads upside down.
+            angle = tilt > 90 ? tilt - 180 : tilt < -90 ? tilt + 180 : tilt
+          }
+        }
+
+        return {
+          index,
+          item,
+          screenX,
+          screenY,
+          angle,
+          // Points sort back-to-front; axis furniture always wins a slot.
+          rank: item.kind === "point" ? anchor.z : -1,
+          behind: anchor.z > 1,
+        }
+      })
+      .toSorted((left, right) => left.rank - right.rank)
+
+    for (const entry of order) {
+      const node = nodes.current[entry.index]
+
+      if (!node) continue
+
+      sizes.current[entry.index] ??= [node.offsetWidth, node.offsetHeight]
+      const [measuredWidth, measuredHeight] = sizes.current[entry.index] ?? [0, 0]
+      // A steeply rotated title occupies its own bounding box turned on its side.
+      const upright = Math.abs(entry.angle) < 45
+      const labelWidth = upright ? measuredWidth : measuredHeight
+      const labelHeight = upright ? measuredHeight : measuredWidth
+      const isActive = entry.item.pointId != null && entry.item.pointId === activeId
+      const box = {
+        left: entry.screenX - labelWidth / 2,
+        right: entry.screenX + labelWidth / 2,
+        top: entry.screenY - labelHeight / 2,
+        bottom: entry.screenY + labelHeight / 2,
+      }
+      const offscreen =
+        entry.behind || box.right < 0 || box.left > width || box.bottom < 0 || box.top > height
+      const collides =
+        !isActive &&
+        placed.some(
+          (other) =>
+            box.left < other.right + LABEL_GAP &&
+            box.right > other.left - LABEL_GAP &&
+            box.top < other.bottom + LABEL_GAP &&
+            box.bottom > other.top - LABEL_GAP,
+        )
+      const visible = !offscreen && !collides
+      const opacity = entry.item.fadeWithDepth ? depth : 1
+
+      if (visible) placed.push(box)
+
+      node.style.transform = `translate3d(${entry.screenX.toFixed(1)}px, ${entry.screenY.toFixed(1)}px, 0) translate(-50%, -50%) rotate(${entry.angle.toFixed(2)}deg)`
+      node.style.opacity = visible ? String(opacity) : "0"
+      node.dataset.active = String(isActive)
+    }
+  })
+
+  return null
+}
+
+/**
+ * Pins the floating detail card beside the active point, matching the 2D chart's
+ * popover. Written straight to the DOM so the card tracks the camera without a
+ * React render per frame.
+ */
+function TooltipAnchor({
+  card,
+  data,
+  positions,
+  scene,
+}: {
+  card: React.RefObject<HTMLDivElement | null>
+  data: PlotData
+  positions: Array<THREE.Vector3>
+  scene: React.RefObject<SceneRefs>
+}) {
+  const anchor = useMemo(() => new THREE.Vector3(), [])
+
+  useFrame((state) => {
+    const node = card.current
+
+    if (!node) return
+
+    const activeId = scene.current.activeId
+    const index = activeId == null ? -1 : (data.pointById.get(activeId)?.index ?? -1)
+    const position = index === -1 ? null : positions[index]
+
+    if (!position) {
+      node.style.opacity = "0"
+
+      return
+    }
+
+    anchor.set(position.x, position.y, position.z * scene.current.depth)
+    anchor.project(state.camera)
+
+    const { width, height } = state.size
+    const screenX = (anchor.x * 0.5 + 0.5) * width
+    const screenY = (-anchor.y * 0.5 + 0.5) * height
+    // Flips to the inside edge so the card never leaves the plot frame.
+    const left = clamp(
+      screenX +
+        (screenX > width / 2 ? -(CHART_TOOLTIP_WIDTH + CHART_TOOLTIP_GAP) : CHART_TOOLTIP_GAP),
+      8,
+      Math.max(8, width - CHART_TOOLTIP_WIDTH - 8),
+    )
+    const top = clamp(screenY - TOOLTIP_RISE, 8, Math.max(8, height - TOOLTIP_SAFE_BOTTOM))
+
+    node.style.transform = `translate3d(${left.toFixed(1)}px, ${top.toFixed(1)}px, 0)`
+    node.style.opacity = anchor.z > 1 ? "0" : "1"
+  })
+
+  return null
 }
 
 export function ComparisonChart3D({
@@ -144,201 +839,131 @@ export function ComparisonChart3D({
   onExitComplete,
 }: {
   models: Array<Model>
-  metrics: Record<AxisName, Metric>
+  metrics: Record<"x" | "y" | "z", Metric>
   phase?: MorphPhase
   onExitComplete?: () => void
 }) {
   const reduceMotion = useReducedMotion()
-  const startsFlat = phase === "in" && !reduceMotion
-  const dragRef = useRef<{
-    pointerId: number
-    x: number
-    y: number
-    rotation: Rotation
-  } | null>(null)
-  const frameRef = useRef(0)
-  const morphFrameRef = useRef(0)
-  const nextRotationRef = useRef<Rotation>(startsFlat ? FLAT_ROTATION : DEFAULT_ROTATION)
-  const depthScaleRef = useRef(startsFlat ? 0 : 1)
-  const exitCompleteRef = useRef(onExitComplete)
-  const [rotation, setRotation] = useState<Rotation>(nextRotationRef.current)
-  const [depthScale, setDepthScale] = useState(depthScaleRef.current)
+  const { colors, resolve } = useThemeColors()
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [preset, setPreset] = useState({ name: "Perspective", nonce: 0 })
+  const [webgl, setWebgl] = useState<boolean | null>(null)
+  const [showPointLabels, setShowPointLabels] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const labelNodes = useRef<Array<HTMLElement | null>>([])
+  const tooltipCard = useRef<HTMLDivElement>(null)
+  const controlsRef = useRef<PlotControls>(null)
+  const data = useMemo(() => buildPlotData(models, metrics), [metrics, models])
+  const startsFlat = phase === "in" && !reduceMotion
+  const sceneRef = useRef<SceneRefs>({ depth: startsFlat ? 0 : 1, activeId: null })
+  const positions = useMemo(
+    () =>
+      data.points.map(
+        (point) =>
+          new THREE.Vector3(
+            unitToScene(point.unit.x),
+            unitToScene(point.unit.y),
+            unitToScene(point.unit.z),
+          ),
+      ),
+    [data],
+  )
+  const axisTickFractions = useMemo(() => {
+    const fractions: Record<PlotAxis, Array<number>> = { x: [], y: [], z: [] }
 
-  exitCompleteRef.current = onExitComplete
-  const chartData = useMemo(() => {
-    const rawPoints = models.flatMap((model) => {
-      const x = getMetricValue(model, metrics.x)
-      const y = getMetricValue(model, metrics.y)
-      const z = getMetricValue(model, metrics.z)
+    for (const axis of AXES) {
+      const domain = data.domains[axis]
+      const span = domain.max - domain.min
 
-      if (x == null || y == null || z == null) return []
-
-      return [{ model, values: { x, y, z } }]
-    })
-    const ranges: Record<AxisName, { min: number; max: number }> = {
-      x: axisRange(rawPoints, "x"),
-      y: axisRange(rawPoints, "y"),
-      z: axisRange(rawPoints, "z"),
+      fractions[axis] = axisTicks(domain, TICK_TARGET).map((value) =>
+        span === 0 ? 0.5 : (value - domain.min) / span,
+      )
     }
 
-    return { rawPoints, ranges }
-  }, [metrics, models])
-  const geometry = useMemo(() => {
-    const project = (coordinate: Coordinate) =>
-      getProjection(withDepth(coordinate, depthScale), rotation)
-    const projectedVertices = CUBE_VERTICES.map(project)
-    const gridLines = GRID_STEPS.flatMap((step) => [
-      [
-        project({ x: CUBE_MIN, y: CUBE_MIN, z: step }),
-        project({ x: CUBE_MAX, y: CUBE_MIN, z: step }),
-      ],
-      [
-        project({ x: step, y: CUBE_MIN, z: CUBE_MIN }),
-        project({ x: step, y: CUBE_MIN, z: CUBE_MAX }),
-      ],
-    ])
-    const axisLabels: Record<AxisName, ProjectedCoordinate> = {
-      x: project(AXIS_ENDPOINTS.x),
-      y: project(AXIS_ENDPOINTS.y),
-      z: project(AXIS_ENDPOINTS.z),
-    }
-    const points = chartData.rawPoints
-      .map(({ model, values }): PlotPoint => {
-        const coordinate: Coordinate = {
-          x: normalizeAxis(values.x, chartData.ranges.x),
-          y: normalizeAxis(values.y, chartData.ranges.y),
-          z: normalizeAxis(values.z, chartData.ranges.z),
-        }
-        const effortLabel = model.effort === "default" ? "" : ` [${model.effort}]`
+    return fractions
+  }, [data])
+  const labelItems = useMemo<Array<LabelItem>>(() => {
+    const items: Array<LabelItem> = []
 
-        return {
-          ...model,
-          id: `${model.model}-${model.effort}`,
-          label: `${model.displayName}${effortLabel}`,
-          values,
-          coordinate,
-          projected: project(coordinate),
-        }
+    for (const axis of AXES) {
+      const metric = metrics[axis]
+      const domain = data.domains[axis]
+      const span = domain.max - domain.min
+      const fadeWithDepth = axis === "z"
+
+      items.push({
+        key: `axis-${axis}`,
+        text: `${METRIC_CONFIG[metric].label} · ${METRIC_CONFIG[metric].unit}`,
+        kind: "axis",
+        axis,
+        fraction: 0.5,
+        fadeWithDepth,
+        screenOffset: AXIS_TITLE_PIXELS,
       })
-      .toSorted((left, right) => left.projected.depth - right.projected.depth)
 
-    return { projectedVertices, gridLines, axisLabels, points }
-  }, [chartData, depthScale, rotation])
-  const activePoint =
-    geometry.points.find((point) => point.id === activeId) ?? geometry.points.at(-1) ?? null
-  const excludedCount = models.length - chartData.rawPoints.length
+      for (const value of axisTicks(domain, TICK_TARGET)) {
+        items.push({
+          key: `tick-${axis}-${value}`,
+          text: formatMetric(value, metric),
+          kind: "tick",
+          axis,
+          fraction: span === 0 ? 0.5 : (value - domain.min) / span,
+          fadeWithDepth,
+          screenOffset: TICK_LABEL_PIXELS,
+        })
+      }
+    }
+
+    if (showPointLabels) {
+      for (const point of data.points) {
+        items.push({
+          key: `point-${point.id}`,
+          text: point.label,
+          kind: "point",
+          base: positions[point.index].clone().setY(positions[point.index].y + 0.11),
+          pointId: point.id,
+        })
+      }
+    }
+
+    return items
+  }, [data, metrics, positions, showPointLabels])
+
+  const activePoint = activeId == null ? null : (data.pointById.get(activeId) ?? null)
+
+  useEffect(() => setWebgl(supportsWebGL()), [])
+
+  useEffect(() => {
+    const container = containerRef.current
+
+    if (!container) return undefined
+
+    const observer = new ResizeObserver(([entry]) => {
+      setShowPointLabels(entry.contentRect.width >= POINT_LABEL_MIN_WIDTH)
+    })
+
+    observer.observe(container)
+
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    sceneRef.current.activeId = activeId
+    invalidate()
+  }, [activeId])
+
+  useEffect(() => {
+    invalidate()
+  }, [colors])
 
   useEffect(
     () => () => {
-      cancelAnimationFrame(frameRef.current)
-      cancelAnimationFrame(morphFrameRef.current)
+      document.body.style.cursor = ""
     },
     [],
   )
 
-  useEffect(() => {
-    if (phase === "instant") return undefined
-
-    const targetDepth = phase === "out" ? 0 : 1
-    const targetRotation = phase === "out" ? FLAT_ROTATION : DEFAULT_ROTATION
-
-    function settle() {
-      depthScaleRef.current = targetDepth
-      nextRotationRef.current = targetRotation
-      setDepthScale(targetDepth)
-      setRotation(targetRotation)
-      if (phase === "out") exitCompleteRef.current?.()
-    }
-
-    if (reduceMotion) {
-      settle()
-      return undefined
-    }
-
-    const fromDepth = depthScaleRef.current
-    const fromRotation = nextRotationRef.current
-    let startTime = 0
-
-    function step(time: number) {
-      startTime = startTime === 0 ? time : startTime
-      const progress = Math.min(1, (time - startTime) / MORPH_DURATION)
-
-      if (progress === 1) {
-        settle()
-        return
-      }
-
-      const eased = easeOutQuart(progress)
-
-      depthScaleRef.current = lerp(fromDepth, targetDepth, eased)
-      nextRotationRef.current = {
-        pitch: lerp(fromRotation.pitch, targetRotation.pitch, eased),
-        yaw: lerp(fromRotation.yaw, targetRotation.yaw, eased),
-      }
-      setDepthScale(depthScaleRef.current)
-      setRotation(nextRotationRef.current)
-      morphFrameRef.current = requestAnimationFrame(step)
-    }
-
-    morphFrameRef.current = requestAnimationFrame(step)
-
-    return () => cancelAnimationFrame(morphFrameRef.current)
-  }, [phase, reduceMotion])
-
-  function updateRotation(nextRotation: Rotation) {
-    nextRotationRef.current = nextRotation
-    cancelAnimationFrame(frameRef.current)
-    frameRef.current = requestAnimationFrame(() => {
-      setRotation(nextRotationRef.current)
-    })
-  }
-
-  function handlePointerDown(event: React.PointerEvent<SVGSVGElement>) {
-    if (event.button !== 0) return
-
-    // A drag during the entrance morph wins: settle the cube and hand over control.
-    cancelAnimationFrame(morphFrameRef.current)
-    if (phase !== "out" && depthScaleRef.current !== 1) {
-      depthScaleRef.current = 1
-      setDepthScale(1)
-    }
-
-    event.currentTarget.setPointerCapture(event.pointerId)
-    dragRef.current = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      rotation,
-    }
-    event.currentTarget.dataset.dragging = "true"
-  }
-
-  function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
-    const drag = dragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) return
-
-    const nextPitch = Math.max(
-      -Math.PI / 2,
-      Math.min(Math.PI / 2, drag.rotation.pitch - (event.clientY - drag.y) * 0.008),
-    )
-    updateRotation({
-      pitch: nextPitch,
-      yaw: drag.rotation.yaw + (event.clientX - drag.x) * 0.008,
-    })
-  }
-
-  function handlePointerUp(event: React.PointerEvent<SVGSVGElement>) {
-    if (dragRef.current?.pointerId !== event.pointerId) return
-
-    dragRef.current = null
-    delete event.currentTarget.dataset.dragging
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-  }
-
-  function handlePointKeyDown(event: React.KeyboardEvent<SVGCircleElement>, index: number) {
+  function handlePointKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, index: number) {
     const direction = ["ArrowRight", "ArrowDown"].includes(event.key)
       ? 1
       : ["ArrowLeft", "ArrowUp"].includes(event.key)
@@ -348,181 +973,197 @@ export function ComparisonChart3D({
     if (direction === 0) return
 
     event.preventDefault()
-    const nextIndex = (index + direction + geometry.points.length) % geometry.points.length
-    event.currentTarget.ownerSVGElement
-      ?.querySelector<SVGCircleElement>(`[data-3d-point="${nextIndex}"]`)
-      ?.focus()
+    const nextIndex = (index + direction + data.points.length) % data.points.length
+
+    document.querySelector<HTMLButtonElement>(`[data-plot-3d-point="${nextIndex}"]`)?.focus()
   }
 
-  if (geometry.points.length === 0) {
+  if (data.points.length === 0) {
     return (
-      <div className="border-border text-muted-foreground flex min-h-[32rem] items-center justify-center border-y text-sm">
+      <DataState className={CHART_HEIGHT_CLASS}>
         No models have values for all three selected metrics
-      </div>
+      </DataState>
     )
   }
 
   return (
-    <div className="border-border border-y">
-      <div className="flex flex-col lg:flex-row">
-        <div className="bg-card relative min-w-0 flex-1">
-          <div className="bg-background absolute top-3 left-3 z-10 flex items-center gap-1 rounded-md p-1">
-            {Object.entries(VIEW_PRESETS).map(([label, view]) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => updateRotation(view)}
-                className={`text-muted-foreground rounded px-2.5 text-xs ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-10 hidden items-center gap-1.5 text-xs sm:flex">
-            <Rotate3D aria-hidden="true" className="h-3.5 w-3.5" />
-            Drag to rotate
-          </p>
-          <svg
-            viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
-            role="group"
-            aria-label={`Interactive 3D scatter plot of ${METRIC_CONFIG[metrics.x].label}, ${METRIC_CONFIG[metrics.y].label}, and ${METRIC_CONFIG[metrics.z].label}`}
-            className="block h-[32rem] w-full cursor-grab touch-none select-none data-[dragging=true]:cursor-grabbing sm:h-[38rem]"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
+    <div ref={containerRef} className="relative" data-chart-frame="loaded">
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 rounded-md">
+        {Object.keys(VIEW_PRESETS).map((label) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={preset.name === label}
+            onClick={() => setPreset((current) => ({ name: label, nonce: current.nonce + 1 }))}
+            className={`rounded px-2.5 text-xs ${
+              preset.name === label
+                ? "text-foreground bg-muted font-medium"
+                : "text-muted-foreground"
+            } ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
           >
-            <g aria-hidden="true">
-              {geometry.gridLines.map(([start, end], index) => (
-                <line
-                  key={index}
-                  x1={start.x}
-                  y1={start.y}
-                  x2={end.x}
-                  y2={end.y}
-                  stroke="var(--border)"
-                  strokeOpacity={0.45}
-                />
-              ))}
-              {CUBE_EDGES.map(([startIndex, endIndex]) => {
-                const start = geometry.projectedVertices[startIndex]
-                const end = geometry.projectedVertices[endIndex]
-
-                return (
-                  <line
-                    key={`${startIndex}-${endIndex}`}
-                    x1={start.x}
-                    y1={start.y}
-                    x2={end.x}
-                    y2={end.y}
-                    stroke="var(--border)"
-                    strokeWidth={1.25}
-                  />
-                )
-              })}
-              {AXES.map((axis) => {
-                const position = geometry.axisLabels[axis]
-
-                return (
-                  <text
-                    key={axis}
-                    x={position.x}
-                    y={position.y}
-                    fill="var(--foreground)"
-                    fontSize={12}
-                    fontWeight={600}
-                    opacity={axis === "z" ? depthScale : 1}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                  >
-                    {axis.toUpperCase()} · {METRIC_CONFIG[metrics[axis]].shortLabel}
-                  </text>
-                )
-              })}
-            </g>
-            <g>
-              {geometry.points.map((point, index) => {
-                const isActive = point.id === activePoint?.id
-                const radius = (isActive ? 8 : 5.5) * point.projected.scale
-
-                return (
-                  <g key={point.id}>
-                    <circle
-                      data-3d-point={index}
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${point.label}: ${AXES.map((axis) => `${METRIC_CONFIG[metrics[axis]].label} ${formatMetric(point.values[axis], metrics[axis])}`).join(", ")}`}
-                      cx={point.projected.x}
-                      cy={point.projected.y}
-                      r={radius}
-                      fill={point.chartColor}
-                      stroke={isActive ? "var(--foreground)" : "var(--background)"}
-                      strokeWidth={isActive ? 3 : 2}
-                      className="transition-[r,opacity] duration-200 outline-none focus-visible:stroke-[var(--ring)]"
-                      onPointerEnter={() => setActiveId(point.id)}
-                      onFocus={() => setActiveId(point.id)}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        setActiveId(point.id)
-                      }}
-                      onKeyDown={(event) => handlePointKeyDown(event, index)}
-                    />
-                    <text
-                      x={point.projected.x + 10}
-                      y={point.projected.y - 9}
-                      fill="var(--foreground)"
-                      stroke="var(--card)"
-                      strokeWidth={3.5}
-                      paintOrder="stroke"
-                      fontSize={10.5}
-                      className="chart-3d-label pointer-events-none"
-                    >
-                      {point.label}
-                    </text>
-                  </g>
-                )
-              })}
-            </g>
-          </svg>
-        </div>
-
-        <aside
-          aria-live="polite"
-          className="border-border w-full border-t p-5 lg:w-64 lg:border-t-0 lg:border-l"
-        >
-          <p className="text-muted-foreground text-xs">
-            {excludedCount === 0
-              ? `${geometry.points.length} comparable variants`
-              : `${geometry.points.length} of ${models.length} variants have all three metrics`}
-          </p>
-          {activePoint ? (
-            <>
-              <h2 className="mt-2 flex items-center gap-2 text-base font-semibold tracking-tight">
-                <ModelLogo family={activePoint.family} className="size-4" accent />
-                {activePoint.label}
-              </h2>
-              <dl className="mt-6 space-y-4">
-                {AXES.map((axis) => (
-                  <div key={axis}>
-                    <dt className="text-muted-foreground text-xs">
-                      {axis.toUpperCase()} · {METRIC_CONFIG[metrics[axis]].label}
-                    </dt>
-                    <dd className="mt-0.5 text-sm font-medium">
-                      {formatMetric(activePoint.values[axis], metrics[axis])}
-                      <span className="text-muted-foreground ml-1 font-normal">
-                        {METRIC_CONFIG[metrics[axis]].unit}
-                      </span>
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="text-muted-foreground mt-7 text-xs leading-5">
-                Arrow keys move between points when the plot is focused.
-              </p>
-            </>
-          ) : null}
-        </aside>
+            {label}
+          </button>
+        ))}
       </div>
+      <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-20 hidden items-center gap-1.5 text-xs sm:flex">
+        <Rotate3D aria-hidden="true" className="h-3.5 w-3.5" />
+        Drag to rotate · scroll to zoom
+      </p>
+      <p className="text-muted-foreground pointer-events-none absolute right-3 bottom-3 z-20 text-xs">
+        {describeCoverage(data, models.length)}
+      </p>
+
+      <div
+        role="img"
+        aria-label={describePlot(data)}
+        className={`relative w-full touch-none select-none ${CHART_HEIGHT_CLASS}`}
+      >
+        {webgl === false ? (
+          <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-4 px-6 text-center text-sm">
+            <p>3D rendering is unavailable on this device.</p>
+            <dl className="max-h-64 w-full max-w-md overflow-y-auto text-left text-xs">
+              {data.points.map((point) => (
+                <div
+                  key={point.id}
+                  className="border-border flex justify-between gap-4 border-b py-1.5"
+                >
+                  <dt className="truncate">{point.label}</dt>
+                  <dd className="shrink-0 tabular-nums">
+                    {AXES.map((axis) => formatMetric(point.values[axis], metrics[axis])).join(
+                      " · ",
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p>Removing the Z axis returns the full 2D chart.</p>
+          </div>
+        ) : null}
+
+        {webgl ? (
+          <>
+            <Canvas
+              frameloop="demand"
+              dpr={[1, 2]}
+              gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+              camera={{
+                fov: 38,
+                near: 0.1,
+                far: 60,
+                position: viewPosition(startsFlat ? MORPH_VIEW : ORBIT_VIEW).toArray(),
+              }}
+              className="cursor-grab active:cursor-grabbing"
+              onPointerMissed={() => setActiveId(null)}
+            >
+              <PlotFrame
+                borderColor={colors.border}
+                gridFractions={axisTickFractions}
+                scene={sceneRef}
+              />
+              <PlotPoints
+                data={data}
+                positions={positions}
+                haloColor={colors.ring}
+                resolveColor={resolve}
+                scene={sceneRef}
+                onActivate={setActiveId}
+              />
+              <LabelProjector items={labelItems} nodes={labelNodes} scene={sceneRef} />
+              <TooltipAnchor
+                card={tooltipCard}
+                data={data}
+                positions={positions}
+                scene={sceneRef}
+              />
+              <CameraDirector
+                controls={controlsRef}
+                onExitComplete={onExitComplete}
+                phase={phase}
+                preset={preset}
+                reduceMotion={reduceMotion}
+                scene={sceneRef}
+              />
+              <OrbitControls
+                ref={controlsRef}
+                makeDefault
+                enablePan={false}
+                enableDamping
+                dampingFactor={0.08}
+                rotateSpeed={0.65}
+                zoomSpeed={0.6}
+                minDistance={2.4}
+                maxDistance={9}
+                minPolarAngle={0.08}
+                maxPolarAngle={Math.PI - 0.08}
+              />
+            </Canvas>
+
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+            >
+              {labelItems.map((item, index) => (
+                <div
+                  key={item.key}
+                  ref={(node) => {
+                    labelNodes.current[index] = node
+                  }}
+                  className={`absolute top-0 left-0 whitespace-nowrap opacity-0 will-change-transform ${
+                    item.kind === "point"
+                      ? "text-foreground font-medium data-[active=true]:font-semibold"
+                      : item.kind === "axis"
+                        ? "text-muted-foreground font-medium"
+                        : "text-muted-foreground tabular-nums"
+                  }`}
+                  style={{
+                    fontSize: chartFontRem(LABEL_SIZES[item.kind]),
+                    textShadow: `0 0 3px ${colors.background}, 0 0 3px ${colors.background}, 0 0 6px ${colors.background}`,
+                  }}
+                >
+                  {item.text}
+                </div>
+              ))}
+            </div>
+
+            <div
+              ref={tooltipCard}
+              aria-hidden={activePoint == null}
+              className="border-border bg-popover text-popover-foreground pointer-events-none absolute top-0 left-0 z-10 rounded-lg border p-3 opacity-0 shadow-lg transition-opacity duration-150 ease-out will-change-transform"
+              style={{ width: CHART_TOOLTIP_WIDTH }}
+            >
+              {activePoint ? (
+                <>
+                  <PointDetails axes={data.axes} metrics={data.metrics} point={activePoint} />
+                  <p className="border-border text-muted-foreground mt-3 border-t pt-2 text-[0.6875rem]">
+                    {SOURCE_LEGEND}
+                  </p>
+                </>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+      </div>
+
+      <div className="sr-only" role="group" aria-label="Chart points">
+        {data.points.map((point) => (
+          <button
+            key={point.id}
+            type="button"
+            tabIndex={point.index === 0 ? 0 : -1}
+            data-plot-3d-point={point.index}
+            aria-label={`${point.label}, ${AXES.map((axis) => `${METRIC_CONFIG[metrics[axis]].label} ${formatMetric(point.values[axis], metrics[axis])}`).join(", ")}`}
+            onFocus={() => setActiveId(point.id)}
+            onClick={() => setActiveId(point.id)}
+            onKeyDown={(event) => handlePointKeyDown(event, point.index)}
+          >
+            {point.label}
+          </button>
+        ))}
+      </div>
+
+      <p aria-live="polite" className="sr-only">
+        {activePoint ? `${activePoint.label} selected` : ""}
+      </p>
     </div>
   )
 }
