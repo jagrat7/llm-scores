@@ -56,6 +56,9 @@ export const Route = createFileRoute("/")({
   component: ComparePage,
 })
 
+/** Each axis parks its source override under its own search param. */
+const AXIS_SOURCE_KEY = { x: "xSource", y: "ySource", z: "zSource" } as const
+
 function axisSetting(metric: Metric | null, source: ProviderName | undefined): AxisSetting {
   return { metric, source: metric == null ? null : resolveSource(metric, source) }
 }
@@ -76,9 +79,7 @@ function ComparePage() {
   }
 
   function handleSourceChange(axis: AxisKey, source: ProviderName) {
-    updateSearch(
-      axis === "x" ? { xSource: source } : axis === "y" ? { ySource: source } : { zSource: source },
-    )
+    updateSearch({ [AXIS_SOURCE_KEY[axis]]: source })
   }
 
   /** Changing a metric drops its source override so the new metric starts on its own default. */
@@ -110,13 +111,18 @@ function ComparePage() {
     if ("metric" in change) handleMetricChange(axis, change.metric ?? null)
   }
 
-  function handleSwapAxes() {
-    updateSearch({
-      x: search.y,
-      xSource: search.ySource,
-      y: search.x,
-      ySource: search.xSource,
-    })
+  /** Both axes are filled before the hinge that calls this is offered at all. */
+  function handleSwapAxes(first: AxisKey, second: AxisKey) {
+    const firstMetric = search[first]
+    const secondMetric = search[second]
+    if (firstMetric == null || secondMetric == null) return
+
+    const update: Partial<typeof search> = {}
+    update[first] = secondMetric
+    update[second] = firstMetric
+    update[AXIS_SOURCE_KEY[first]] = search[AXIS_SOURCE_KEY[second]]
+    update[AXIS_SOURCE_KEY[second]] = search[AXIS_SOURCE_KEY[first]]
+    updateSearch(update)
   }
 
   function handleExitComplete() {
@@ -135,7 +141,7 @@ function ComparePage() {
   }
 
   return (
-    <PageShell className="pt-4 pb-6">
+    <PageShell className="pt-8 pb-6">
       <h1 className="sr-only">Compare language models</h1>
       <AxisControls
         axes={axes}

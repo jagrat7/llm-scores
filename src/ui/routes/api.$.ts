@@ -6,6 +6,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4"
 import { createFileRoute } from "@tanstack/react-router"
 
 import router from "#/server/orpc/router"
+import { APP_NAME } from "#/ui/lib/app-meta"
 
 const handler = new OpenAPIHandler(router, {
   interceptors: [
@@ -21,7 +22,7 @@ const handler = new OpenAPIHandler(router, {
       schemaConverters: [new ZodToJsonSchemaConverter()],
       specGenerateOptions: {
         info: {
-          title: "llm-scores API",
+          title: `${APP_NAME} API`,
           version: "1.0.0",
         },
         commonSchemas: {
