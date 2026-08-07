@@ -6,6 +6,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
 import AppHeader from "#/ui/components/app-header"
 import { TooltipProvider } from "#/ui/components/ui/tooltip"
+import { APP_DESCRIPTION, APP_NAME } from "#/ui/lib/app-meta"
 
 import ClerkProvider from "../components/integrations/clerk/provider"
 import TanStackQueryDevtools from "../components/integrations/tanstack-query/devtools"
@@ -30,7 +31,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "llm-scores — compare language models",
+        title: `${APP_NAME} — ${APP_DESCRIPTION}`,
       },
     ],
     links: [

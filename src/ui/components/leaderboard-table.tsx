@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "#/ui/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
-import { TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
+import { BELOW_HEADER_OFFSET_CLASS, TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric } from "#/ui/lib/metrics"
 import { sourceLabel as providerLabel, uniqueSources } from "#/ui/lib/sources"
 import { cn } from "#/ui/lib/utils"
@@ -174,7 +174,7 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
       containerClassName="border-border border-y lg:overflow-x-visible"
       className={`${TABLE_WIDTH_CLASS} border-collapse text-left tabular-nums`}
     >
-      <TableHeader className="bg-background lg:sticky lg:top-12 lg:z-20">
+      <TableHeader className={`bg-background ${BELOW_HEADER_OFFSET_CLASS} lg:sticky lg:z-20`}>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id} className="hover:bg-transparent">
             {headerGroup.headers.map((header, index) => {

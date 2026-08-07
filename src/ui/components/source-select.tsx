@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/ui/components/ui/select"
-import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { CONTROL_META_TEXT_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRIC_CONFIG } from "#/ui/lib/metrics"
 import { isSource, sourceLabel } from "#/ui/lib/sources"
 import { cn } from "#/ui/lib/utils"
@@ -19,7 +19,7 @@ import { cn } from "#/ui/lib/utils"
  * inset belongs to what follows it, matching the select trigger's own `px-2`
  * so the marks line up whether the row is a control or plain attribution.
  */
-const VIA_ROW_CLASS = "text-muted-foreground flex items-center gap-1.5 text-sm sm:text-xs"
+const VIA_ROW_CLASS = `text-muted-foreground flex items-center gap-1.5 ${CONTROL_META_TEXT_CLASS}`
 const VIA_CONTENT_CLASS = "flex items-center gap-1.5 truncate px-2"
 
 /**
@@ -31,19 +31,21 @@ export function SourceSelect({
   metric,
   value,
   onChange,
+  className,
   disabled = false,
 }: {
   axis: string
   metric: Metric
   value: ProviderName
   onChange: (source: ProviderName) => void
+  className?: string
   disabled?: boolean
 }) {
   const { sources } = METRIC_CONFIG[metric]
 
   if (sources.length < 2) {
     return (
-      <p className={VIA_ROW_CLASS}>
+      <p className={cn(VIA_ROW_CLASS, className)}>
         <span aria-hidden="true">via</span>
         <span className={cn(VIA_CONTENT_CLASS, MOBILE_TOUCH_TARGET_CLASS)}>
           <SourceLogo source={value} className="size-3" accent />
@@ -54,7 +56,7 @@ export function SourceSelect({
   }
 
   return (
-    <p className={VIA_ROW_CLASS}>
+    <p className={cn(VIA_ROW_CLASS, className)}>
       <span aria-hidden="true">via</span>
       <Select
         value={value}
@@ -67,16 +69,19 @@ export function SourceSelect({
           size="sm"
           aria-label={`${axis}-axis data source`}
           className={cn(
-            "text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground gap-1.5 border-transparent bg-transparent px-2 text-sm shadow-none sm:text-xs",
+            "text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground min-w-0 gap-1.5 border-transparent bg-transparent px-2 shadow-none",
+            CONTROL_META_TEXT_CLASS,
             MOBILE_TOUCH_TARGET_CLASS,
           )}
         >
           {/* Base UI resolves the label from the raw value, so the mark is rendered here. */}
-          <SelectValue>
+          {/* The trigger lays the value out as a flex row, which kills the registry's
+              `line-clamp`; the label carries its own truncation instead. */}
+          <SelectValue className="min-w-0">
             {(selected: ProviderName) => (
               <>
                 <SourceLogo source={selected} className="size-3" />
-                {sourceLabel(selected)}
+                <span className="truncate">{sourceLabel(selected)}</span>
               </>
             )}
           </SelectValue>

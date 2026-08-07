@@ -16,10 +16,10 @@ function LeaderboardPage() {
   const { data, isPending, isError } = useModels()
 
   return (
-    <PageShell className="pt-6 pb-8">
+    <PageShell className="pt-8 pb-8">
       <div className="mb-5 flex items-baseline justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Leaderboard</h1>
+          <h1 className="text-lg font-semibold tracking-tight lowercase">Leaderboard</h1>
           <p className="text-muted-foreground mt-1 text-xs">DeepSWE model×effort results</p>
         </div>
         {data ? <Badge variant="secondary">{data.models.length} variants</Badge> : null}

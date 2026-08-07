@@ -31,6 +31,7 @@ export function MetricSelect({
   onChange,
   onRemove,
   unavailable = [],
+  className,
   disabled = false,
 }: {
   axis: Axis
@@ -39,13 +40,14 @@ export function MetricSelect({
   onChange: (metric: Metric) => void
   onRemove?: () => void
   unavailable?: ReadonlyArray<Metric>
+  className?: string
   disabled?: boolean
 }) {
   const isEmpty = value == null
   const label = isEmpty ? `Add ${axis} axis` : `${axis}-axis metric`
 
   return (
-    <ButtonGroup className="w-full">
+    <ButtonGroup className={cn("w-full", className)}>
       <Select
         value={value ?? ""}
         onValueChange={(metric) => {

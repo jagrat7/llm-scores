@@ -1,4 +1,5 @@
 import { RiArrowUpDownLine } from "@remixicon/react"
+import { Fragment } from "react"
 
 import type { Axis } from "#/ui/components/metric-select"
 import type { Metric } from "#/ui/lib/metrics"
@@ -10,7 +11,7 @@ import { SourceSelect } from "#/ui/components/source-select"
 import { Button } from "#/ui/components/ui/button"
 import { Separator } from "#/ui/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
-import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { CONTROL_META_TEXT_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRICS } from "#/ui/lib/metrics"
 import { cn } from "#/ui/lib/utils"
 
@@ -24,7 +25,23 @@ export type AxisSetting = { metric: Metric | null; source: ProviderName | null }
 export type AxisState = Record<AxisKey, AxisSetting>
 
 /** Ink and weight make the axis letters a structural spine; size keeps them under the metric. */
-const AXIS_LABEL_CLASS = "text-foreground text-xs font-semibold"
+const AXIS_LABEL_CLASS = `text-foreground ${CONTROL_META_TEXT_CLASS} font-semibold`
+
+/**
+ * A swap is a hinge between two adjacent rows, so each button spans both and
+ * centres on the edge they share — which is exactly the space the axis letters
+ * leave empty. Both live in one rail: letters at its outer edge, hinges pushed
+ * up against the fields they trade, so neither costs the rows a column of its
+ * own. Only neighbours trade places: X↔Y always, and Y↔Z once the depth axis is
+ * filled. Tailwind needs the row start spelled out.
+ */
+const SWAP_PAIRS = [
+  { from: "x", to: "y", rowStartClass: "row-start-1" },
+  { from: "y", to: "z", rowStartClass: "row-start-2" },
+] as const satisfies ReadonlyArray<{ from: AxisKey; to: AxisKey; rowStartClass: string }>
+
+/** Letters and hinges contest the rail, so every cell states its row outright. */
+const AXIS_ROW_START_CLASSES = ["row-start-1", "row-start-2", "row-start-3"] as const
 
 export function AxisControls({
   axes,
@@ -37,7 +54,7 @@ export function AxisControls({
 }: {
   axes: AxisState
   onAxisChange: (axis: AxisKey, change: Partial<AxisSetting>) => void
-  onSwapAxes: () => void
+  onSwapAxes: (first: AxisKey, second: AxisKey) => void
   models: Array<Model>
   selected: Array<string>
   onSelectedChange: (models: Array<string>) => void
@@ -50,48 +67,42 @@ export function AxisControls({
 
   return (
     <div className="mx-auto mb-6 flex w-full max-w-lg flex-col gap-3 sm:max-w-3xl sm:flex-row sm:items-start sm:gap-4">
-      <div className="grid flex-1 grid-cols-[2rem_1rem_minmax(0,1fr)_minmax(0,auto)] items-center gap-x-2 gap-y-1.5">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={onSwapAxes}
-                aria-label="Swap the X and Y axes"
-                disabled={disabled}
-                className={cn(
-                  "text-muted-foreground row-span-2 justify-self-start",
-                  MOBILE_TOUCH_TARGET_CLASS,
-                )}
-              >
-                <RiArrowUpDownLine aria-hidden="true" />
-              </Button>
-            }
-          />
-          <TooltipContent>Swap X and Y</TooltipContent>
-        </Tooltip>
-
-        {AXIS_KEYS.map((key) => {
+      {/* Every cell names its own column, so a row can drop its source mark and the
+          rail can carry letters and hinges at once. The metric track keeps a floor:
+          on a phone the attribution beside it would otherwise take the row and clip
+          the label the row exists to show. */}
+      <div className="grid flex-1 grid-cols-[--spacing(8)_minmax(--spacing(32),1fr)_minmax(0,auto)] items-center gap-x-2 gap-y-1.5">
+        {AXIS_KEYS.map((key, index) => {
           const { metric, source } = axes[key]
+          const swap = SWAP_PAIRS.find((pair) => pair.from === key)
 
           return (
-            <AxisRow
-              key={key}
-              axis={AXIS_LABELS[key]}
-              metric={metric}
-              source={source}
-              unavailable={used.filter((candidate) => candidate !== metric)}
-              onMetricChange={(next) => onAxisChange(key, { metric: next })}
-              onSourceChange={(next) => onAxisChange(key, { source: next })}
-              onRemove={
-                key === "z" && metric != null
-                  ? () => onAxisChange(key, { metric: null })
-                  : undefined
-              }
-              leadingSpacer={key === "z"}
-              disabled={disabled || (metric == null && !hasSpareMetric)}
-            />
+            <Fragment key={key}>
+              <AxisRow
+                axis={AXIS_LABELS[key]}
+                rowStartClass={AXIS_ROW_START_CLASSES[index]}
+                metric={metric}
+                source={source}
+                unavailable={used.filter((candidate) => candidate !== metric)}
+                onMetricChange={(next) => onAxisChange(key, { metric: next })}
+                onSourceChange={(next) => onAxisChange(key, { source: next })}
+                onRemove={
+                  key === "z" && metric != null
+                    ? () => onAxisChange(key, { metric: null })
+                    : undefined
+                }
+                disabled={disabled || (metric == null && !hasSpareMetric)}
+              />
+              {swap && metric != null && axes[swap.to].metric != null ? (
+                <SwapAxesButton
+                  first={AXIS_LABELS[swap.from]}
+                  second={AXIS_LABELS[swap.to]}
+                  rowStartClass={swap.rowStartClass}
+                  onSwap={() => onSwapAxes(swap.from, swap.to)}
+                  disabled={disabled}
+                />
+              ) : null}
+            </Fragment>
           )
         })}
       </div>
@@ -112,31 +123,75 @@ export function AxisControls({
   )
 }
 
+function SwapAxesButton({
+  first,
+  second,
+  rowStartClass,
+  onSwap,
+  disabled,
+}: {
+  first: Axis
+  second: Axis
+  rowStartClass: string
+  onSwap: () => void
+  disabled: boolean
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onSwap}
+            aria-label={`Swap the ${first} and ${second} axes`}
+            disabled={disabled}
+            className={cn(
+              "text-muted-foreground col-start-1 row-span-2 justify-self-end",
+              rowStartClass,
+              MOBILE_TOUCH_TARGET_CLASS,
+            )}
+          >
+            <RiArrowUpDownLine aria-hidden="true" />
+          </Button>
+        }
+      />
+      <TooltipContent>
+        Swap {first} and {second}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 function AxisRow({
   axis,
+  rowStartClass,
   metric,
   source,
   unavailable,
   onMetricChange,
   onSourceChange,
   onRemove,
-  leadingSpacer,
   disabled,
 }: {
   axis: Axis
+  rowStartClass: string
   metric: Metric | null
   source: ProviderName | null
   unavailable: ReadonlyArray<Metric>
   onMetricChange: (metric: Metric) => void
   onSourceChange: (source: ProviderName) => void
   onRemove?: () => void
-  leadingSpacer: boolean
   disabled: boolean
 }) {
   return (
     <>
-      {leadingSpacer ? <div /> : null}
-      <span aria-hidden="true" className={AXIS_LABEL_CLASS}>
+      {/* Shares the rail with the hinges, which reach past the row on touch —
+          `relative` keeps the letter over their press fill rather than under it. */}
+      <span
+        aria-hidden="true"
+        className={cn("relative col-start-1 justify-self-start", rowStartClass, AXIS_LABEL_CLASS)}
+      >
         {axis}
       </span>
       <MetricSelect
@@ -145,19 +200,19 @@ function AxisRow({
         onChange={onMetricChange}
         onRemove={onRemove}
         unavailable={unavailable}
+        className={cn("col-start-2", rowStartClass)}
         disabled={disabled}
       />
-      {metric == null || source == null ? (
-        <div />
-      ) : (
+      {metric != null && source != null ? (
         <SourceSelect
           axis={axis}
           metric={metric}
           value={source}
           onChange={onSourceChange}
+          className={cn("col-start-3", rowStartClass)}
           disabled={disabled}
         />
-      )}
+      ) : null}
     </>
   )
 }

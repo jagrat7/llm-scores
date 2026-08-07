@@ -23,7 +23,11 @@ import {
 import { InputGroupAddon } from "#/ui/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "#/ui/components/ui/popover"
 import { Skeleton } from "#/ui/components/ui/skeleton"
-import { MOBILE_TOUCH_TARGET_CLASS, PRIMARY_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import {
+  CONTROL_META_TEXT_CLASS,
+  MOBILE_TOUCH_TARGET_CLASS,
+  PRIMARY_TOUCH_TARGET_CLASS,
+} from "#/ui/lib/interaction-styles"
 import { cn } from "#/ui/lib/utils"
 
 type DotStyle = CSSProperties & { "--dot": string }
@@ -47,8 +51,12 @@ const CHIPS_RESET_CLASS =
 /** Uneven on purpose: model names differ in length, so equal blocks read as fake. */
 const SKELETON_CHIP_WIDTHS = ["w-24", "w-32", "w-20", "w-28", "w-16"]
 
-/** Chip metrics, shared by the real chips, the overflow control and the skeletons. */
-const CHIP_HEIGHT_CLASS = "h-7 sm:h-[calc(--spacing(4.75))]"
+/**
+ * Chip metrics, shared by the real chips, the overflow control and the skeletons.
+ * Chips annotate the search bar rather than compete with it, so they sit on the
+ * strip's meta step — the same one the `via` rows in the axis column hold.
+ */
+const CHIP_METRICS_CLASS = `h-7 sm:h-[calc(--spacing(4.75))] ${CONTROL_META_TEXT_CLASS}`
 
 /**
  * Mirrors `ComboboxChip`'s surface. The overflow list is portalled outside
@@ -56,7 +64,7 @@ const CHIP_HEIGHT_CLASS = "h-7 sm:h-[calc(--spacing(4.75))]"
  * like them.
  */
 const CHIP_SURFACE_CLASS =
-  "bg-muted-foreground/10 text-foreground flex w-fit items-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-xs/relaxed font-medium whitespace-nowrap"
+  "bg-muted-foreground/10 text-foreground flex w-fit items-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 font-medium whitespace-nowrap"
 
 /** The chart keys its series by family colour, so these dots are its legend. */
 function ModelDot({ model }: { model: Model }) {
@@ -149,7 +157,7 @@ export function ModelPicker({
             {SKELETON_CHIP_WIDTHS.map((width) => (
               <Skeleton
                 key={width}
-                className={cn("rounded-[calc(var(--radius-sm)-2px)]", CHIP_HEIGHT_CLASS, width)}
+                className={cn("rounded-[calc(var(--radius-sm)-2px)]", CHIP_METRICS_CLASS, width)}
               />
             ))}
           </div>
@@ -162,7 +170,7 @@ export function ModelPicker({
                   {/* Chips remove by render index, so they have to stay in value order —
                       taking the head keeps every visible chip pointing at its own model. */}
                   {shown.slice(0, VISIBLE_CHIP_LIMIT).map((model) => (
-                    <ComboboxChip key={model.model} className={CHIP_HEIGHT_CLASS}>
+                    <ComboboxChip key={model.model} className={CHIP_METRICS_CLASS}>
                       <ModelDot model={model} />
                       {model.displayName}
                     </ComboboxChip>
@@ -180,7 +188,7 @@ export function ModelPicker({
                       variant="secondary"
                       size="sm"
                       aria-label={`Show ${hidden.length} more selected models`}
-                      className={CHIP_HEIGHT_CLASS}
+                      className={CHIP_METRICS_CLASS}
                     />
                   }
                 >
@@ -190,7 +198,7 @@ export function ModelPicker({
                 <PopoverContent align="start" className="w-56 p-2">
                   <ul className="flex flex-wrap gap-1">
                     {hidden.map((model) => (
-                      <li key={model.model} className={cn(CHIP_SURFACE_CLASS, CHIP_HEIGHT_CLASS)}>
+                      <li key={model.model} className={cn(CHIP_SURFACE_CLASS, CHIP_METRICS_CLASS)}>
                         <ModelDot model={model} />
                         {model.displayName}
                         <Button
