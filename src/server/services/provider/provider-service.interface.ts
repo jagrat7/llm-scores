@@ -1,9 +1,22 @@
-import type { ProviderModel, ProviderName } from "./provider.types"
+import type { CachedSource } from "../cache"
+import type { ProviderModel, ProviderModelDataByProvider, ProviderName } from "./provider.types"
 
 export interface ProviderService {
+  fetchModels<TProvider extends ProviderName>(
+    provider: TProvider,
+  ): Promise<CachedSource<Array<ProviderModelDataByProvider[TProvider]>>>
   listModels(provider: ProviderName): Promise<Array<ProviderModel>>
-  getScore(model: string, provider: ProviderName, effort?: string): Promise<number | null>
-  getCostPerMTokens(model: string, provider: ProviderName, effort?: string): Promise<number | null>
-  getTokensPerSecond(model: string, provider: ProviderName, effort?: string): Promise<number | null>
-  getDurationSeconds(model: string, provider: ProviderName, effort?: string): Promise<number | null>
+  getModel<TProvider extends ProviderName>(
+    provider: TProvider,
+    model: string,
+    effort?: string,
+  ): Promise<ProviderModelDataByProvider[TProvider] | null>
+}
+
+export interface ProviderModelReader<TProvider extends ProviderName> {
+  getModel(
+    provider: TProvider,
+    model: string,
+    effort?: string,
+  ): Promise<ProviderModelDataByProvider[TProvider] | null>
 }

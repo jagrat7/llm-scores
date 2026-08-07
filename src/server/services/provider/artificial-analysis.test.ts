@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe("ArtificialAnalysisProvider", () => {
-  it("does not publish Artificial Analysis pricing as cost", async () => {
+  it("only exposes metrics published by Artificial Analysis", async () => {
     globalThis.fetch = vi.fn(async () =>
       Response.json({
         data: [
@@ -29,6 +29,8 @@ describe("ArtificialAnalysisProvider", () => {
 
     const models = await new ArtificialAnalysisProvider().fetchModels()
 
-    expect(models[0].costPerMTokens).toBeNull()
+    expect(models[0]).not.toHaveProperty("costPerMTokens")
+    expect(models[0]).not.toHaveProperty("score")
+    expect(models[0]).not.toHaveProperty("durationSeconds")
   })
 })

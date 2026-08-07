@@ -18,9 +18,19 @@ export type ProviderModel = {
   effortOrder: number
 }
 
-export type ProviderModelData = ProviderModel & {
+export type DeepSWEProviderModel = ProviderModel & {
   score: number | null
   costPerMTokens: number | null
-  tokensPerSecond: number | null
   durationSeconds: number | null
 }
+
+export type ArtificialAnalysisProviderModel = ProviderModel & {
+  tokensPerSecond: number | null
+}
+
+export type ProviderModelDataByProvider = {
+  deepswe: DeepSWEProviderModel
+  artificialAnalysis: ArtificialAnalysisProviderModel
+}
+
+export type ProviderModelData = ProviderModelDataByProvider[ProviderName]

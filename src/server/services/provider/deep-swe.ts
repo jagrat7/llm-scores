@@ -1,10 +1,10 @@
 import { z } from "zod"
 
 import { EFFORT_ORDER, getModelConfig } from "./model-config"
-import type { ProviderModelData } from "./provider.types"
+import type { DeepSWEProviderModel } from "./provider.types"
 
 const API_URL = "https://deepswe.datacurve.ai/artifacts/v1.1/leaderboard-live.json"
-const CACHE_KEY = "llm-scores:deepswe:v1.1:models:v1"
+const CACHE_KEY = "llm-scores:deepswe:v1.1:models:v2"
 const REQUEST_TIMEOUT_MS = 20_000
 
 const nullableNumber = z.number().nullable().optional()
@@ -26,7 +26,7 @@ const payloadSchema = z.object({
 export class DeepSWEProvider {
   readonly cacheKey = CACHE_KEY
 
-  async fetchModels(): Promise<Array<ProviderModelData>> {
+  async fetchModels(): Promise<Array<DeepSWEProviderModel>> {
     const response = await fetch(API_URL, {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
@@ -53,7 +53,6 @@ export class DeepSWEProvider {
           model.mean_cost_usd != null && tokens > 0
             ? (model.mean_cost_usd / tokens) * 1_000_000
             : null,
-        tokensPerSecond: null,
         durationSeconds: model.mean_duration_seconds ?? null,
       }
     })

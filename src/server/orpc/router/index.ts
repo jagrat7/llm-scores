@@ -1,10 +1,8 @@
-import {
-  getModelCostProcedure,
-  getModelDurationProcedure,
-  getModelScoreProcedure,
-  getModelTokensPerSecondProcedure,
-  listProviderModelsProcedure,
-} from "./models"
+import { getModelCostProcedure } from "./cost"
+import { getModelDurationProcedure } from "./duration"
+import { listProviderModelsProcedure } from "./provider"
+import { getModelScoreProcedure } from "./score"
+import { getModelTokensPerSecondProcedure } from "./token-speed"
 
 export default {
   models: {

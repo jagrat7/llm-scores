@@ -3,10 +3,10 @@ import { z } from "zod"
 import { env } from "#/env"
 
 import { EFFORT_ORDER, getModelConfig } from "./model-config"
-import type { ProviderModelData } from "./provider.types"
+import type { ArtificialAnalysisProviderModel } from "./provider.types"
 
 const API_URL = "https://artificialanalysis.ai/api/v2/language/models/free"
-const CACHE_KEY = "llm-scores:artificial-analysis:v2:models:v3"
+const CACHE_KEY = "llm-scores:artificial-analysis:v2:models:v4"
 const MAX_PAGES = 100
 const REQUEST_TIMEOUT_MS = 20_000
 const EFFORT_SUFFIX_PATTERN = /-(low|medium|high|xhigh|max)$/
@@ -33,10 +33,10 @@ const payloadSchema = z.object({
 export class ArtificialAnalysisProvider {
   readonly cacheKey = CACHE_KEY
 
-  async fetchModels(): Promise<Array<ProviderModelData>> {
+  async fetchModels(): Promise<Array<ArtificialAnalysisProviderModel>> {
     if (!env.AA_API_KEY) throw new Error("AA_API_KEY is not configured")
 
-    const models: Array<ProviderModelData> = []
+    const models: Array<ArtificialAnalysisProviderModel> = []
 
     for (let page = 1; page <= MAX_PAGES; page += 1) {
       const response = await fetch(`${API_URL}?page=${page}`, {
@@ -67,10 +67,7 @@ export class ArtificialAnalysisProvider {
             isDefault: config.isDefault,
             effort,
             effortOrder: EFFORT_ORDER[effort] ?? 0,
-            score: null,
-            costPerMTokens: null,
             tokensPerSecond: model.performance?.median_output_tokens_per_second ?? null,
-            durationSeconds: null,
           }
         }),
       )

@@ -2,14 +2,16 @@ import { ProviderCache, type CachedSource } from "../cache"
 import { ArtificialAnalysisProvider } from "./artificial-analysis"
 import { DeepSWEProvider } from "./deep-swe"
 import type { ProviderService } from "./provider-service.interface"
-import type { ProviderModel, ProviderModelData, ProviderName } from "./provider.types"
+import type { ProviderModel, ProviderModelDataByProvider, ProviderName } from "./provider.types"
 
-type ProviderIntegration = {
+type ProviderIntegration<TProvider extends ProviderName> = {
   readonly cacheKey: string
-  fetchModels(): Promise<Array<ProviderModelData>>
+  fetchModels(): Promise<Array<ProviderModelDataByProvider[TProvider]>>
 }
 
-type ProviderRegistry = Record<ProviderName, ProviderIntegration>
+type ProviderRegistry = {
+  [TProvider in ProviderName]: ProviderIntegration<TProvider>
+}
 
 export class ProviderDataService implements ProviderService {
   constructor(
@@ -20,7 +22,9 @@ export class ProviderDataService implements ProviderService {
     },
   ) {}
 
-  async fetchModels(provider: ProviderName): Promise<CachedSource<Array<ProviderModelData>>> {
+  async fetchModels<TProvider extends ProviderName>(
+    provider: TProvider,
+  ): Promise<CachedSource<Array<ProviderModelDataByProvider[TProvider]>>> {
     const integration = this.providers[provider]
 
     return this.cache.fetch(integration.cacheKey, () => integration.fetchModels())
@@ -41,23 +45,11 @@ export class ProviderDataService implements ProviderService {
     )
   }
 
-  async getScore(model: string, provider: ProviderName, effort?: string) {
-    return (await this.getProviderModel(model, provider, effort))?.score ?? null
-  }
-
-  async getCostPerMTokens(model: string, provider: ProviderName, effort?: string) {
-    return (await this.getProviderModel(model, provider, effort))?.costPerMTokens ?? null
-  }
-
-  async getTokensPerSecond(model: string, provider: ProviderName, effort?: string) {
-    return (await this.getProviderModel(model, provider, effort))?.tokensPerSecond ?? null
-  }
-
-  async getDurationSeconds(model: string, provider: ProviderName, effort?: string) {
-    return (await this.getProviderModel(model, provider, effort))?.durationSeconds ?? null
-  }
-
-  private async getProviderModel(model: string, provider: ProviderName, effort = "default") {
+  async getModel<TProvider extends ProviderName>(
+    provider: TProvider,
+    model: string,
+    effort = "default",
+  ): Promise<ProviderModelDataByProvider[TProvider] | null> {
     const source = await this.fetchModels(provider)
 
     return (
