@@ -1,7 +1,9 @@
-import { Plus, X } from "lucide-react"
+import { RiAddLine, RiCloseLine } from "@remixicon/react"
 
 import type { Metric } from "#/ui/lib/metrics"
 
+import { Button } from "#/ui/components/ui/button"
+import { ButtonGroup } from "#/ui/components/ui/button-group"
 import {
   Select,
   SelectContent,
@@ -9,8 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/ui/components/ui/select"
+import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
 import {
-  INTERACTIVE_SURFACE_CLASS,
+  CONTROL_CHIP_CLASS,
   MOBILE_TOUCH_TARGET_CLASS,
   PRIMARY_TOUCH_TARGET_CLASS,
 } from "#/ui/lib/interaction-styles"
@@ -19,8 +22,6 @@ import { cn } from "#/ui/lib/utils"
 
 export type Axis = "X" | "Y" | "Z"
 
-/** The chosen metric is the loudest text on this surface; the chrome around it stays quiet. */
-const CHIP_CLASS = `bg-background text-muted-foreground dark:bg-background dark:hover:bg-muted w-full justify-between gap-2 px-3 text-sm shadow-none focus-visible:outline-none ${PRIMARY_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`
 const EMPTY_CHIP_CLASS =
   "border-primary/40 text-accent-foreground border-dashed hover:text-accent-foreground"
 
@@ -44,34 +45,32 @@ export function MetricSelect({
   const label = isEmpty ? `Add ${axis} axis` : `${axis}-axis metric`
 
   return (
-    <div className="flex w-full items-center">
+    <ButtonGroup className="w-full">
       <Select
         value={value ?? ""}
         onValueChange={(metric) => {
-          if (isMetric(metric)) onChange(metric)
+          if (metric != null && isMetric(metric)) onChange(metric)
         }}
         disabled={disabled}
       >
         <SelectTrigger
           aria-label={label}
-          className={cn(
-            CHIP_CLASS,
-            isEmpty ? EMPTY_CHIP_CLASS : null,
-            onRemove ? "rounded-r-none pr-2" : null,
-          )}
+          className={cn(CONTROL_CHIP_CLASS, isEmpty ? EMPTY_CHIP_CLASS : null)}
         >
           <span className="sr-only">{label}</span>
           {isEmpty ? (
             <span aria-hidden="true" className="flex items-center gap-2 font-semibold">
-              <Plus className="text-primary h-4 w-4" />
+              <RiAddLine className="text-primary size-4" />
               Add {axis} axis
             </span>
           ) : (
-            <SelectValue className="text-foreground font-semibold" />
+            <SelectValue className="text-foreground font-semibold">
+              {(selected: Metric) => METRIC_CONFIG[selected].shortLabel}
+            </SelectValue>
           )}
         </SelectTrigger>
         <SelectContent
-          position="popper"
+          alignItemWithTrigger={false}
           align="start"
           className="duration-200 ease-out motion-reduce:animate-none"
         >
@@ -88,17 +87,24 @@ export function MetricSelect({
         </SelectContent>
       </Select>
       {onRemove ? (
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={disabled}
-          aria-label={`Remove ${axis} axis and return to the 2D chart`}
-          title={`Remove ${axis} axis`}
-          className={`border-input text-muted-foreground -ml-px inline-flex w-9 items-center justify-center rounded-md rounded-l-none border sm:h-9 sm:w-8 ${PRIMARY_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
-        >
-          <X aria-hidden="true" className="h-3.5 w-3.5" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon-sm"
+                onClick={onRemove}
+                disabled={disabled}
+                aria-label={`Remove ${axis} axis and return to the 2D chart`}
+                className={cn("text-muted-foreground", PRIMARY_TOUCH_TARGET_CLASS)}
+              >
+                <RiCloseLine aria-hidden="true" />
+              </Button>
+            }
+          />
+          <TooltipContent>Remove {axis} axis</TooltipContent>
+        </Tooltip>
       ) : null}
-    </div>
+    </ButtonGroup>
   )
 }

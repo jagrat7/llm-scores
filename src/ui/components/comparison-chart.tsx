@@ -264,9 +264,7 @@ export function ComparisonChart({
   }
 
   if (data.points.length === 0) {
-    return (
-      <DataState className={CHART_HEIGHT_CLASS}>No models have both selected metrics</DataState>
-    )
+    return <DataState className={CHART_HEIGHT_CLASS} title="No models have both selected metrics" />
   }
 
   return (

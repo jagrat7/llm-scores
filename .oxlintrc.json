@@ -25,6 +25,7 @@
     "dist/**",
     "oldpythonref/**",
     "public/**",
+    "src/ui/components/ui/**",
     "src/ui/routeTree.gen.ts",
     "**/*.gen.ts"
   ],

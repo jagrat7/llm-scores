@@ -1,4 +1,5 @@
 import type { SortingState } from "@tanstack/react-table"
+import type { CSSProperties } from "react"
 
 import {
   createColumnHelper,
@@ -7,14 +8,24 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
+import { RiArrowDownLine, RiArrowUpDownLine, RiArrowUpLine } from "@remixicon/react"
 import { useState } from "react"
 
 import type { Model } from "#/ui/lib/orpc-client"
 
 import { ModelLogo } from "#/ui/components/model-logo"
 import { SourceLogo } from "#/ui/components/source-logo"
-import { INTERACTIVE_SURFACE_CLASS } from "#/ui/lib/interaction-styles"
+import { Button } from "#/ui/components/ui/button"
+import { Progress } from "#/ui/components/ui/progress"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "#/ui/components/ui/table"
+import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
 import { TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric } from "#/ui/lib/metrics"
 import { sourceLabel as providerLabel, uniqueSources } from "#/ui/lib/sources"
@@ -28,6 +39,10 @@ const RIGHT_ALIGNED_COLUMN_IDS = new Set([
   "durationSeconds",
   "source",
 ])
+/** The first column stays put while the rest scrolls, until the viewport can hold the whole table. */
+const STICKY_COLUMN_CLASS = "sticky left-0 z-10 bg-background lg:static"
+
+type BarStyle = CSSProperties & { "--bar": string }
 
 function modelSources(model: Model) {
   return uniqueSources(Object.values(model.sources))
@@ -38,17 +53,20 @@ function renderModelCell({ row, getValue }: { row: { original: Model }; getValue
   const modelLabel = `${getValue()}${effortLabel}`
 
   return (
-    <div className="flex w-48 max-w-48 items-center gap-2" title={modelLabel}>
-      <ModelLogo family={row.original.family} className="text-muted-foreground size-3.5" />
-      <div className="truncate">
-        <span className="text-foreground font-medium">{getValue()}</span>
-        {effortLabel ? (
-          <span className="text-muted-foreground ml-1.5 text-sm sm:text-xs">
-            {effortLabel.trim()}
-          </span>
-        ) : null}
-      </div>
-    </div>
+    <Tooltip>
+      <TooltipTrigger render={<div className="flex w-48 max-w-48 items-center gap-2 text-left" />}>
+        <ModelLogo family={row.original.family} className="text-muted-foreground size-3.5" />
+        <div className="truncate">
+          <span className="text-foreground font-medium">{getValue()}</span>
+          {effortLabel ? (
+            <span className="text-muted-foreground ml-1.5 text-sm sm:text-xs">
+              {effortLabel.trim()}
+            </span>
+          ) : null}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{modelLabel}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -60,18 +78,17 @@ function renderScoreCell({
   getValue: () => number | null
 }) {
   const score = getValue()
+  const barStyle: BarStyle = { "--bar": row.original.chartColor }
+
   return (
     <div className="ml-auto flex min-w-40 items-center justify-end gap-3">
       <span className="w-12 text-right">{formatMetric(score, "score")}</span>
-      <span className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
-        <span
-          className="block h-full origin-left rounded-full transition-transform duration-200 ease-out"
-          style={{
-            transform: `scaleX(${Math.max(0, Math.min(100, score ?? 0)) / 100})`,
-            backgroundColor: row.original.chartColor,
-          }}
-        />
-      </span>
+      <Progress
+        value={Math.max(0, Math.min(100, score ?? 0))}
+        aria-label={`Score ${formatMetric(score, "score")}`}
+        className="flex-1 [&_[data-slot=progress-indicator]]:bg-(--bar)"
+        style={barStyle}
+      />
     </div>
   )
 }
@@ -90,15 +107,21 @@ function renderSourceCell({ row }: { row: { original: Model } }) {
   const label = sources.map((source) => providerLabel(source)).join(" · ")
 
   return (
-    <span
-      title={label}
-      aria-label={label}
-      className="text-muted-foreground inline-flex items-center justify-end gap-1.5 text-sm sm:text-xs"
-    >
-      {sources.map((source) => (
-        <SourceLogo key={source} source={source} className="size-3" />
-      ))}
-    </span>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            aria-label={label}
+            className="text-muted-foreground inline-flex items-center justify-end gap-1.5 text-sm sm:text-xs"
+          />
+        }
+      >
+        {sources.map((source) => (
+          <SourceLogo key={source} source={source} className="size-3" />
+        ))}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -146,87 +169,90 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
   })
 
   return (
-    <div
-      className="border-border overflow-x-auto border-y lg:overflow-x-visible"
+    <Table
       data-table-frame="loaded"
+      containerClassName="border-border border-y lg:overflow-x-visible"
+      className={`${TABLE_WIDTH_CLASS} border-collapse text-left tabular-nums`}
     >
-      <table className={`${TABLE_WIDTH_CLASS} border-collapse text-left text-sm tabular-nums`}>
-        <thead className="bg-background lg:sticky lg:top-12 lg:z-20">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-border border-b">
-              {headerGroup.headers.map((header, index) => {
-                const sorted = header.column.getIsSorted()
-                const canSort = header.column.getCanSort()
-                const rightAligned = RIGHT_ALIGNED_COLUMN_IDS.has(header.id)
-                const SortIcon =
-                  sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown
+      <TableHeader className="bg-background lg:sticky lg:top-12 lg:z-20">
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id} className="hover:bg-transparent">
+            {headerGroup.headers.map((header, index) => {
+              const sorted = header.column.getIsSorted()
+              const canSort = header.column.getCanSort()
+              const rightAligned = RIGHT_ALIGNED_COLUMN_IDS.has(header.id)
+              const SortIcon =
+                sorted === "asc"
+                  ? RiArrowUpLine
+                  : sorted === "desc"
+                    ? RiArrowDownLine
+                    : RiArrowUpDownLine
 
-                return (
-                  <th
-                    key={header.id}
-                    scope="col"
-                    aria-sort={
-                      sorted === "asc"
-                        ? "ascending"
-                        : sorted === "desc"
-                          ? "descending"
-                          : canSort
-                            ? "none"
-                            : undefined
-                    }
-                    className={cn(
-                      "h-11 px-3 text-sm font-medium whitespace-nowrap text-muted-foreground sm:h-10 sm:text-xs",
-                      rightAligned ? "text-right" : null,
-                      index === 0 ? "sticky left-0 z-30 bg-background lg:static" : null,
-                    )}
-                  >
-                    {canSort ? (
-                      <button
-                        type="button"
-                        onClick={header.column.getToggleSortingHandler()}
-                        className={cn(
-                          "-mx-2 inline-flex min-h-11 items-center gap-1 rounded-sm px-2 sm:min-h-8",
-                          rightAligned ? "ml-auto justify-end" : null,
-                          sorted ? "text-foreground" : null,
-                          INTERACTIVE_SURFACE_CLASS,
-                        )}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <SortIcon aria-hidden="true" className="h-3 w-3" />
-                      </button>
-                    ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
-                    )}
-                  </th>
-                )
-              })}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              className="group/mark group border-border hover:bg-muted/60 border-b last:border-b-0"
-            >
-              {row.getVisibleCells().map((cell, index) => (
-                <td
-                  key={cell.id}
+              return (
+                <TableHead
+                  key={header.id}
+                  scope="col"
+                  aria-sort={
+                    sorted === "asc"
+                      ? "ascending"
+                      : sorted === "desc"
+                        ? "descending"
+                        : canSort
+                          ? "none"
+                          : undefined
+                  }
                   className={cn(
-                    "h-11 px-3 whitespace-nowrap text-foreground",
-                    RIGHT_ALIGNED_COLUMN_IDS.has(cell.column.id) ? "text-right" : null,
-                    index === 0
-                      ? "sticky left-0 z-10 bg-background transition-colors duration-200 ease-out group-hover:bg-muted/60 lg:static"
-                      : null,
+                    "text-muted-foreground h-11 px-3 sm:h-10 sm:text-xs",
+                    rightAligned ? "text-right" : null,
+                    index === 0 ? cn(STICKY_COLUMN_CLASS, "z-30") : null,
                   )}
                 >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  {canSort ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={header.column.getToggleSortingHandler()}
+                      className={cn(
+                        "-mx-2 min-h-11 px-2 font-medium sm:min-h-8",
+                        rightAligned ? "ml-auto" : null,
+                        sorted ? "text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <SortIcon aria-hidden="true" data-icon="inline-end" />
+                    </Button>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
+                  )}
+                </TableHead>
+              )
+            })}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <TableRow key={row.id} className="group/mark group hover:bg-muted/60">
+            {row.getVisibleCells().map((cell, index) => (
+              <TableCell
+                key={cell.id}
+                className={cn(
+                  "text-foreground h-11 px-3",
+                  RIGHT_ALIGNED_COLUMN_IDS.has(cell.column.id) ? "text-right" : null,
+                  index === 0
+                    ? cn(
+                        STICKY_COLUMN_CLASS,
+                        "transition-colors duration-200 ease-out group-hover:bg-muted/60",
+                      )
+                    : null,
+                )}
+              >
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }

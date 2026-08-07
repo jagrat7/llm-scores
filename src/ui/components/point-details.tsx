@@ -2,6 +2,7 @@ import type { Metric } from "#/ui/lib/metrics"
 import type { PlotAxis, PlotPoint } from "#/ui/lib/comparison-plot-data"
 
 import { ModelLogo } from "#/ui/components/model-logo"
+import { Badge } from "#/ui/components/ui/badge"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 
 const SOURCE_ABBREVIATIONS = { DeepSWE: "D", "Artificial Analysis": "AA" } as const
@@ -58,9 +59,9 @@ export function PointDetails({
               <dd className="text-right text-sm font-medium tabular-nums">
                 {formatMetric(point.values[axis], metric)}
                 {abbreviation ? (
-                  <span className="text-muted-foreground ml-1.5 text-[0.6875rem] font-normal">
+                  <Badge variant="outline" className="ml-1.5 px-1 py-0 text-[0.625rem] font-normal">
                     {abbreviation}
-                  </span>
+                  </Badge>
                 ) : null}
               </dd>
             </div>

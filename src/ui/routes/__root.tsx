@@ -5,6 +5,7 @@ import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/reac
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
 import AppHeader from "#/ui/components/app-header"
+import { TooltipProvider } from "#/ui/components/ui/tooltip"
 
 import ClerkProvider from "../components/integrations/clerk/provider"
 import TanStackQueryDevtools from "../components/integrations/tanstack-query/devtools"
@@ -14,7 +15,9 @@ interface MyRouterContext {
   queryClient: QueryClient
 }
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=['light','dark','system'].includes(stored)?stored:'system';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='system'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);root.setAttribute('data-theme',mode);root.style.colorScheme=resolved}catch(e){}})()`
+// Runs before paint, so it cannot import from `#/ui/lib/theme` — keep the two in
+// step: no stored value means the system preference decides.
+const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var resolved=stored==='light'||stored==='dark'?stored:(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);root.style.colorScheme=resolved}catch(e){}})()`
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
@@ -49,8 +52,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased">
         <ClerkProvider>
-          <AppHeader />
-          {children}
+          <TooltipProvider>
+            <AppHeader />
+            {children}
+          </TooltipProvider>
           <TanStackDevtools
             config={{
               hideUntilHover: true,

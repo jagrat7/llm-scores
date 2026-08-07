@@ -1,6 +1,6 @@
+import { RiDragMove2Line } from "@remixicon/react"
 import { OrbitControls } from "@react-three/drei"
 import { Canvas, invalidate, useFrame, useThree } from "@react-three/fiber"
-import { Rotate3D } from "lucide-react"
 import { type ComponentRef, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 
@@ -10,6 +10,8 @@ import type { PlotAxis, PlotData } from "#/ui/lib/comparison-plot-data"
 
 import { DataState } from "#/ui/components/data-state"
 import { PointDetails, SOURCE_LEGEND } from "#/ui/components/point-details"
+import { Button } from "#/ui/components/ui/button"
+import { ButtonGroup } from "#/ui/components/ui/button-group"
 import {
   CHART_ACTIVE_SCALE,
   CHART_AXIS_TITLE_SIZE,
@@ -27,7 +29,7 @@ import {
   describePlot,
 } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
-import { INTERACTIVE_SURFACE_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useThemeColors } from "#/ui/lib/theme-colors"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
@@ -980,33 +982,31 @@ export function ComparisonChart3D({
 
   if (data.points.length === 0) {
     return (
-      <DataState className={CHART_HEIGHT_CLASS}>
-        No models have values for all three selected metrics
-      </DataState>
+      <DataState
+        className={CHART_HEIGHT_CLASS}
+        title="No models have values for all three selected metrics"
+      />
     )
   }
 
   return (
     <div ref={containerRef} className="relative" data-chart-frame="loaded">
-      <div className="absolute top-3 left-3 z-20 flex items-center gap-0.5 rounded-md">
+      <ButtonGroup className="absolute top-3 left-3 z-20">
         {Object.keys(VIEW_PRESETS).map((label) => (
-          <button
+          <Button
             key={label}
-            type="button"
+            size="sm"
+            variant={preset.name === label ? "secondary" : "outline"}
             aria-pressed={preset.name === label}
             onClick={() => setPreset((current) => ({ name: label, nonce: current.nonce + 1 }))}
-            className={`rounded px-2.5 text-xs ${
-              preset.name === label
-                ? "text-foreground bg-muted font-medium"
-                : "text-muted-foreground"
-            } ${MOBILE_TOUCH_TARGET_CLASS} ${INTERACTIVE_SURFACE_CLASS}`}
+            className={MOBILE_TOUCH_TARGET_CLASS}
           >
             {label}
-          </button>
+          </Button>
         ))}
-      </div>
+      </ButtonGroup>
       <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-20 hidden items-center gap-1.5 text-xs sm:flex">
-        <Rotate3D aria-hidden="true" className="h-3.5 w-3.5" />
+        <RiDragMove2Line aria-hidden="true" className="size-3.5" />
         Drag to rotate · scroll to zoom
       </p>
       <p className="text-muted-foreground pointer-events-none absolute right-3 bottom-3 z-20 text-xs">
