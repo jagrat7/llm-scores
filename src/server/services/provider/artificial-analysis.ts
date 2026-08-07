@@ -6,7 +6,7 @@ import { EFFORT_ORDER, getModelConfig } from "./model-config"
 import type { ProviderModelData } from "./provider.types"
 
 const API_URL = "https://artificialanalysis.ai/api/v2/language/models/free"
-const CACHE_KEY = "llm-scores:artificial-analysis:v2:models:v1"
+const CACHE_KEY = "llm-scores:artificial-analysis:v2:models:v3"
 const MAX_PAGES = 100
 const REQUEST_TIMEOUT_MS = 20_000
 const EFFORT_SUFFIX_PATTERN = /-(low|medium|high|xhigh|max)$/
@@ -16,13 +16,6 @@ const nullableNumber = z.number().nullable().optional()
 const modelSchema = z.object({
   name: z.string().optional(),
   slug: z.string(),
-  pricing: z
-    .object({
-      price_1m_blended_3_to_1: nullableNumber,
-      price_1m_input_tokens: nullableNumber,
-      price_1m_output_tokens: nullableNumber,
-    })
-    .optional(),
   performance: z
     .object({
       median_output_tokens_per_second: nullableNumber,
@@ -36,8 +29,6 @@ const payloadSchema = z.object({
     has_more: z.boolean(),
   }),
 })
-
-type ArtificialAnalysisResponseModel = z.infer<typeof modelSchema>
 
 export class ArtificialAnalysisProvider {
   readonly cacheKey = CACHE_KEY
@@ -77,7 +68,7 @@ export class ArtificialAnalysisProvider {
             effort,
             effortOrder: EFFORT_ORDER[effort] ?? 0,
             score: null,
-            costPerMTokens: this.getCostPerMTokens(model),
+            costPerMTokens: null,
             tokensPerSecond: model.performance?.median_output_tokens_per_second ?? null,
             durationSeconds: null,
           }
@@ -88,17 +79,5 @@ export class ArtificialAnalysisProvider {
     }
 
     return models
-  }
-
-  private getCostPerMTokens(model: ArtificialAnalysisResponseModel) {
-    const pricing = model.pricing
-    const blended = pricing?.price_1m_blended_3_to_1
-
-    if (blended != null) return blended
-
-    const input = pricing?.price_1m_input_tokens
-    const output = pricing?.price_1m_output_tokens
-
-    return input != null && output != null ? (input * 3 + output) / 4 : null
   }
 }

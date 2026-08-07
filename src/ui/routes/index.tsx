@@ -66,8 +66,13 @@ function axisSetting(metric: Metric | null, source: ProviderName | undefined): A
 function ComparePage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, isError } = useModels()
   const reduceMotion = useReducedMotion()
+  const axes: AxisState = {
+    x: axisSetting(search.x, search.xSource),
+    y: axisSetting(search.y, search.ySource),
+    z: axisSetting(search.z ?? null, search.zSource),
+  }
+  const { data, isPending, isError } = useModels()
   // Distinguishes "user just added Z" (animate the cube open) from a deep link (start solved).
   const [morphPhase, setMorphPhase] = useState<MorphPhase>("instant")
 
@@ -134,11 +139,6 @@ function ComparePage() {
   const selectedModelIds = new Set(selected)
   const selectedModels = data?.models.filter((model) => selectedModelIds.has(model.model)) ?? []
   const controlsDisabled = isPending ? true : isError
-  const axes: AxisState = {
-    x: axisSetting(search.x, search.xSource),
-    y: axisSetting(search.y, search.ySource),
-    z: axisSetting(search.z ?? null, search.zSource),
-  }
 
   return (
     <PageShell className="pt-8 pb-6">
@@ -186,11 +186,17 @@ function ComparePage() {
             <ComparisonChart3D
               models={selectedModels}
               metrics={{ x: search.x, y: search.y, z: search.z }}
+              sources={{ x: axes.x.source, y: axes.y.source, z: axes.z.source }}
               phase={morphPhase}
               onExitComplete={handleExitComplete}
             />
           ) : (
-            <ComparisonChart models={selectedModels} xMetric={search.x} yMetric={search.y} />
+            <ComparisonChart
+              models={selectedModels}
+              sources={{ x: axes.x.source, y: axes.y.source }}
+              xMetric={search.x}
+              yMetric={search.y}
+            />
           )}
         </Suspense>
       ) : null}

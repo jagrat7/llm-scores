@@ -27,7 +27,7 @@ import {
 } from "#/ui/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
 import { BELOW_HEADER_OFFSET_CLASS, TABLE_WIDTH_CLASS } from "#/ui/lib/layout-styles"
-import { formatMetric } from "#/ui/lib/metrics"
+import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { sourceLabel as providerLabel, uniqueSources } from "#/ui/lib/sources"
 import { cn } from "#/ui/lib/utils"
 
@@ -136,7 +136,7 @@ const columns = [
     cell: renderScoreCell,
   }),
   columnHelper.accessor("costPerMTokens", {
-    header: "Cost $/M",
+    header: METRIC_CONFIG.cost.shortLabel,
     sortUndefined: "last",
     cell: ({ getValue }) => formatMetric(getValue(), "cost"),
   }),

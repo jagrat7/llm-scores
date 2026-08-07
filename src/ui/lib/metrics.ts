@@ -19,6 +19,7 @@ export const METRIC_CONFIG: Record<
     dataKey: MetricDataKey
     /** Providers publishing this metric, best first. The head is the default source. */
     sources: ReadonlyArray<ProviderName>
+    sourceNotes?: Partial<Record<ProviderName, string>>
   }
 > = {
   score: {
@@ -33,7 +34,10 @@ export const METRIC_CONFIG: Record<
     shortLabel: "Cost $/M",
     unit: "$/M tokens",
     dataKey: "costPerMTokens",
-    sources: ["artificialAnalysis", "deepswe"],
+    sources: ["deepswe"],
+    sourceNotes: {
+      deepswe: "observed input/output mix",
+    },
   },
   speed: {
     label: "Speed",
@@ -49,6 +53,13 @@ export const METRIC_CONFIG: Record<
     dataKey: "durationSeconds",
     sources: ["deepswe"],
   },
+}
+
+export function metricAxisTitle(metric: Metric, source: ProviderName | null) {
+  const config = METRIC_CONFIG[metric]
+  const sourceNote = source == null ? null : config.sourceNotes?.[source]
+
+  return `${config.label} · ${config.unit}${sourceNote == null ? "" : ` (${sourceNote})`}`
 }
 
 /** Falls back to the metric's default source, so a stale URL source never sticks. */

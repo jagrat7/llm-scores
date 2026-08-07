@@ -11,8 +11,11 @@ export const CHART_GRID_OPACITY = 0.55
 export const CHART_GRID_MINOR_OPACITY = 0.28
 /** How much a point grows when it becomes the active one. */
 export const CHART_ACTIVE_SCALE = 1.4
-export const CHART_TOOLTIP_WIDTH = 224
-export const CHART_TOOLTIP_GAP = 16
+export const CHART_TOOLTIP_WIDTH = 200
+export const CHART_TOOLTIP_GAP = 12
+/** Shared shell for the floating point readout on both chart renderers. */
+export const CHART_TOOLTIP_CLASS =
+  "pointer-events-none z-10 rounded-md border border-border/40 bg-background/15 p-2.5 text-foreground shadow-sm backdrop-blur-sm transition-opacity duration-150 ease-out"
 /** ease-out-quart, matching the transition curve in `styles.css`. */
 export const CHART_EASE = [0.22, 1, 0.36, 1] as const
 export const CHART_TRANSITION_MS = 200

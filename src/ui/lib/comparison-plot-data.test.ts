@@ -35,7 +35,7 @@ function makeModel({
     durationSeconds,
     sources: sources ?? {
       score: "DeepSWE",
-      costPerMTokens: "Artificial Analysis",
+      costPerMTokens: "DeepSWE",
       tokensPerSecond: "Artificial Analysis",
       durationSeconds: "DeepSWE",
     },

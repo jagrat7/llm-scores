@@ -23,7 +23,7 @@ export type Model = ProviderModel & {
   durationSeconds: MetricValue
   sources: {
     score: "DeepSWE" | null
-    costPerMTokens: "DeepSWE" | "Artificial Analysis" | null
+    costPerMTokens: "DeepSWE" | null
     tokensPerSecond: "Artificial Analysis" | null
     durationSeconds: "DeepSWE" | null
   }

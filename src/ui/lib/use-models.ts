@@ -83,17 +83,6 @@ export function useModels() {
       enabled: hasDeepsweModels,
     })),
   })
-  const artificialAnalysisCosts = useQueries({
-    queries: artificialAnalysisQueryModels.map((model) =>
-      orpc.models.costPerMTokens.queryOptions({
-        input: {
-          provider: ARTIFICIAL_ANALYSIS,
-          model: model.model,
-          effort: model.effort,
-        },
-      }),
-    ),
-  })
   const tokensPerSecond = useQueries({
     queries: artificialAnalysisQueryModels.map((model) =>
       orpc.models.tokensPerSecond.queryOptions({
@@ -105,13 +94,7 @@ export function useModels() {
       }),
     ),
   })
-  const metricQueries = [
-    ...scores,
-    ...deepsweCosts,
-    ...durations,
-    ...artificialAnalysisCosts,
-    ...tokensPerSecond,
-  ]
+  const metricQueries = [...scores, ...deepsweCosts, ...durations, ...tokensPerSecond]
   const isPending =
     deepswe.isPending ||
     artificialAnalysis.isPending ||
@@ -125,10 +108,6 @@ export function useModels() {
       : undefined
     const score = scores[index]?.data ?? null
     const deepsweCost = deepsweCosts[index]?.data ?? null
-    const artificialAnalysisCost =
-      artificialAnalysisIndex == null
-        ? null
-        : (artificialAnalysisCosts[artificialAnalysisIndex]?.data ?? null)
     const speed =
       artificialAnalysisIndex == null
         ? null
@@ -138,17 +117,12 @@ export function useModels() {
     return {
       ...model,
       score,
-      costPerMTokens: artificialAnalysisCost ?? deepsweCost,
+      costPerMTokens: deepsweCost,
       tokensPerSecond: speed,
       durationSeconds: duration,
       sources: {
         score: score == null ? null : DEEPSWE_LABEL,
-        costPerMTokens:
-          artificialAnalysisCost != null
-            ? ARTIFICIAL_ANALYSIS_LABEL
-            : deepsweCost == null
-              ? null
-              : DEEPSWE_LABEL,
+        costPerMTokens: deepsweCost == null ? null : DEEPSWE_LABEL,
         tokensPerSecond: speed == null ? null : ARTIFICIAL_ANALYSIS_LABEL,
         durationSeconds: duration == null ? null : DEEPSWE_LABEL,
       },

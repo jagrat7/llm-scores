@@ -33,12 +33,11 @@ import { cn } from "#/ui/lib/utils"
 type DotStyle = CSSProperties & { "--dot": string }
 
 /**
- * Three rows of chips at the picker's width, which squares it up with the axis
- * rows beside it; the rest collapse into a count so the chart never gets pushed
- * down. Odd on purpose — it leaves the last row short enough for the overflow
- * count to sit beside a chip instead of claiming a row of its own.
+ * Pack the picker's width with chips before collapsing the rest into a count —
+ * empty space on the last row is worse than one more badge. Four rows at `sm:w-72`
+ * still sits under the axis column, so the chart doesn't get pushed down.
  */
-const VISIBLE_CHIP_LIMIT = 5
+const VISIBLE_CHIP_LIMIT = 11
 
 /**
  * The chips are loose badges below the search bar, not a field of their own. The
@@ -49,7 +48,19 @@ const CHIPS_RESET_CLASS =
   "min-h-0 rounded-none border-0 bg-transparent p-0 focus-within:border-transparent focus-within:ring-0 has-data-[slot=combobox-chip]:px-0 dark:bg-transparent"
 
 /** Uneven on purpose: model names differ in length, so equal blocks read as fake. */
-const SKELETON_CHIP_WIDTHS = ["w-24", "w-32", "w-20", "w-28", "w-16"]
+const SKELETON_CHIP_WIDTHS = [
+  "w-24",
+  "w-32",
+  "w-20",
+  "w-28",
+  "w-16",
+  "w-24",
+  "w-20",
+  "w-28",
+  "w-16",
+  "w-32",
+  "w-20",
+]
 
 /**
  * Chip metrics, shared by the real chips, the overflow control and the skeletons.
@@ -154,9 +165,9 @@ export function ModelPicker({
         </div>
         {isLoading ? (
           <div aria-hidden="true" className="flex flex-wrap gap-1">
-            {SKELETON_CHIP_WIDTHS.map((width) => (
+            {SKELETON_CHIP_WIDTHS.map((width, index) => (
               <Skeleton
-                key={width}
+                key={`${width}-${index}`}
                 className={cn("rounded-[calc(var(--radius-sm)-2px)]", CHIP_METRICS_CLASS, width)}
               />
             ))}

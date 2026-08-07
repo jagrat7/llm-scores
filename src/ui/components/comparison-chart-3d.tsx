@@ -5,11 +5,11 @@ import { type ComponentRef, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 
 import type { Metric } from "#/ui/lib/metrics"
-import type { Model } from "#/ui/lib/orpc-client"
+import type { Model, ProviderName } from "#/ui/lib/orpc-client"
 import type { PlotAxis, PlotData } from "#/ui/lib/comparison-plot-data"
 
 import { DataState } from "#/ui/components/data-state"
-import { PointDetails, SOURCE_LEGEND } from "#/ui/components/point-details"
+import { PointDetails } from "#/ui/components/point-details"
 import { Button } from "#/ui/components/ui/button"
 import {
   CHART_ACTIVE_SCALE,
@@ -17,13 +17,14 @@ import {
   CHART_GRID_OPACITY,
   CHART_POINT_LABEL_SIZE,
   CHART_TICK_SIZE,
+  CHART_TOOLTIP_CLASS,
   CHART_TOOLTIP_GAP,
   CHART_TOOLTIP_WIDTH,
   chartFontRem,
 } from "#/ui/lib/chart-styles"
 import { axisTicks, buildPlotData, describePlot } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
-import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
+import { formatMetric, metricAxisTitle, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useThemeColors } from "#/ui/lib/theme-colors"
 import { cn } from "#/ui/lib/utils"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
@@ -831,11 +832,13 @@ function TooltipAnchor({
 export function ComparisonChart3D({
   models,
   metrics,
+  sources,
   phase = "instant",
   onExitComplete,
 }: {
   models: Array<Model>
   metrics: Record<"x" | "y" | "z", Metric>
+  sources: Record<"x" | "y" | "z", ProviderName | null>
   phase?: MorphPhase
   onExitComplete?: () => void
 }) {
@@ -889,7 +892,7 @@ export function ComparisonChart3D({
 
       items.push({
         key: `axis-${axis}`,
-        text: `${METRIC_CONFIG[metric].label} · ${METRIC_CONFIG[metric].unit}`,
+        text: metricAxisTitle(metric, sources[axis]),
         kind: "axis",
         axis,
         fraction: 0.5,
@@ -923,7 +926,7 @@ export function ComparisonChart3D({
     }
 
     return items
-  }, [data, metrics, positions, showPointLabels])
+  }, [data, metrics, positions, showPointLabels, sources])
 
   const activePoint = activeId == null ? null : (data.pointById.get(activeId) ?? null)
 
@@ -1125,16 +1128,11 @@ export function ComparisonChart3D({
             <div
               ref={tooltipCard}
               aria-hidden={activePoint == null}
-              className="border-border bg-popover text-popover-foreground pointer-events-none absolute top-0 left-0 z-10 rounded-lg border p-3 opacity-0 shadow-lg transition-opacity duration-150 ease-out will-change-transform"
+              className={`absolute top-0 left-0 opacity-0 will-change-transform ${CHART_TOOLTIP_CLASS}`}
               style={{ width: CHART_TOOLTIP_WIDTH }}
             >
               {activePoint ? (
-                <>
-                  <PointDetails axes={data.axes} metrics={data.metrics} point={activePoint} />
-                  <p className="border-border text-muted-foreground mt-3 border-t pt-2 text-[0.6875rem]">
-                    {SOURCE_LEGEND}
-                  </p>
-                </>
+                <PointDetails axes={data.axes} metrics={data.metrics} point={activePoint} />
               ) : null}
             </div>
           </>

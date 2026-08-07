@@ -7,11 +7,11 @@ import { motion } from "motion/react"
 import { useEffect, useMemo, useState } from "react"
 
 import type { Metric } from "#/ui/lib/metrics"
-import type { Model } from "#/ui/lib/orpc-client"
+import type { Model, ProviderName } from "#/ui/lib/orpc-client"
 import type { PlotData, PlotPoint } from "#/ui/lib/comparison-plot-data"
 
 import { DataState } from "#/ui/components/data-state"
-import { PointDetails, SOURCE_LEGEND } from "#/ui/components/point-details"
+import { PointDetails } from "#/ui/components/point-details"
 import {
   CHART_ACTIVE_SCALE,
   CHART_AXIS_TITLE_SIZE,
@@ -20,12 +20,13 @@ import {
   CHART_GRID_OPACITY,
   CHART_POINT_LABEL_SIZE,
   CHART_TICK_SIZE,
+  CHART_TOOLTIP_CLASS,
   CHART_TOOLTIP_GAP,
   CHART_TOOLTIP_WIDTH,
 } from "#/ui/lib/chart-styles"
 import { buildPlotData, describePlot, padDomain } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
-import { formatMetric, METRIC_CONFIG } from "#/ui/lib/metrics"
+import { formatMetric, metricAxisTitle, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
 
 type Position = { x: number; y: number }
@@ -143,10 +144,12 @@ function placeLabels(
 
 export function ComparisonChart({
   models,
+  sources,
   xMetric,
   yMetric,
 }: {
   models: Array<Model>
+  sources: Record<"x" | "y", ProviderName | null>
   xMetric: Metric
   yMetric: Metric
 }) {
@@ -446,7 +449,7 @@ export function ComparisonChart({
             fontSize={CHART_AXIS_TITLE_SIZE}
             fontWeight={500}
           >
-            {METRIC_CONFIG[xMetric].label} · {METRIC_CONFIG[xMetric].unit}
+            {metricAxisTitle(xMetric, sources.x)}
           </text>
           <text
             transform={`translate(16 ${MARGIN.top + layout.innerHeight / 2}) rotate(-90)`}
@@ -455,14 +458,14 @@ export function ComparisonChart({
             fontSize={CHART_AXIS_TITLE_SIZE}
             fontWeight={500}
           >
-            {METRIC_CONFIG[yMetric].label} · {METRIC_CONFIG[yMetric].unit}
+            {metricAxisTitle(yMetric, sources.y)}
           </text>
         </svg>
       ) : null}
 
       <div
         aria-hidden={activePoint == null}
-        className={`border-border bg-popover text-popover-foreground pointer-events-none absolute z-10 rounded-lg border p-3 shadow-lg transition-opacity duration-150 ease-out ${
+        className={`absolute ${CHART_TOOLTIP_CLASS} ${
           activePoint == null ? "opacity-0" : "opacity-100"
         }`}
         style={
@@ -480,17 +483,12 @@ export function ComparisonChart({
                   8,
                   Math.max(8, width - CHART_TOOLTIP_WIDTH - 8),
                 ),
-                top: clamp(MARGIN.top + activePosition.y - 60, 8, Math.max(8, height - 168)),
+                top: clamp(MARGIN.top + activePosition.y - 40, 8, Math.max(8, height - 120)),
               }
         }
       >
         {activePoint ? (
-          <>
-            <PointDetails axes={data.axes} metrics={data.metrics} point={activePoint} />
-            <p className="border-border text-muted-foreground mt-3 border-t pt-2 text-[0.6875rem]">
-              {SOURCE_LEGEND}
-            </p>
-          </>
+          <PointDetails axes={data.axes} metrics={data.metrics} point={activePoint} />
         ) : null}
       </div>
 
