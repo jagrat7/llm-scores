@@ -12,14 +12,16 @@ import {
   SelectValue,
 } from "#/ui/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
-import { MOBILE_TOUCH_TARGET_CLASS, PRIMARY_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import {
+  CONTROL_CHIP_CLASS,
+  MOBILE_TOUCH_TARGET_CLASS,
+  PRIMARY_TOUCH_TARGET_CLASS,
+} from "#/ui/lib/interaction-styles"
 import { isMetric, METRICS, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { cn } from "#/ui/lib/utils"
 
 export type Axis = "X" | "Y" | "Z"
 
-/** The chosen metric is the loudest text on this surface; the chrome around it stays quiet. */
-const CHIP_CLASS = `text-muted-foreground w-full justify-between gap-2 px-3 text-sm shadow-none hover:bg-muted hover:text-foreground ${PRIMARY_TOUCH_TARGET_CLASS}`
 const EMPTY_CHIP_CLASS =
   "border-primary/40 text-accent-foreground border-dashed hover:text-accent-foreground"
 
@@ -53,7 +55,7 @@ export function MetricSelect({
       >
         <SelectTrigger
           aria-label={label}
-          className={cn(CHIP_CLASS, isEmpty ? EMPTY_CHIP_CLASS : null)}
+          className={cn(CONTROL_CHIP_CLASS, isEmpty ? EMPTY_CHIP_CLASS : null)}
         >
           <span className="sr-only">{label}</span>
           {isEmpty ? (

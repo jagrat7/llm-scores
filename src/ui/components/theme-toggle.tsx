@@ -1,99 +1,98 @@
-import { RiComputerLine, RiMoonLine, RiSunLine } from "@remixicon/react"
-import { useEffect, useState } from "react"
+import { RiMoonLine, RiSunLine } from "@remixicon/react"
+import { useCallback, useEffect, useState } from "react"
+import { flushSync } from "react-dom"
+
+import type { Theme } from "#/ui/lib/theme"
 
 import { Button } from "#/ui/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "#/ui/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
 import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
+import {
+  applyTheme,
+  storeTheme,
+  storedTheme,
+  systemTheme,
+  withThemeTransition,
+} from "#/ui/lib/theme"
 import { cn } from "#/ui/lib/utils"
 
-type ThemeMode = "system" | "light" | "dark"
+/** Bare letter, so it stays out of the way of every browser and OS shortcut. */
+const TOGGLE_KEY = "d"
 
-const THEME_MODES: Array<{ mode: ThemeMode; label: string; icon: typeof RiComputerLine }> = [
-  { mode: "system", label: "System", icon: RiComputerLine },
-  { mode: "light", label: "Light", icon: RiSunLine },
-  { mode: "dark", label: "Dark", icon: RiMoonLine },
-]
-
-function isThemeMode(value: string | null): value is ThemeMode {
-  return value === "system" || value === "light" || value === "dark"
-}
-
-function getStoredMode(): ThemeMode {
-  if (typeof window === "undefined") return "system"
-
-  const stored = window.localStorage.getItem("theme")
-  return isThemeMode(stored) ? stored : "system"
-}
-
-function applyTheme(mode: ThemeMode) {
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-  const resolved = mode === "system" ? (prefersDark ? "dark" : "light") : mode
-  const root = document.documentElement
-
-  root.classList.remove("light", "dark")
-  root.classList.add(resolved)
-  root.dataset.theme = mode
-  root.style.colorScheme = resolved
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
 }
 
 export default function ThemeToggle() {
-  const [mode, setMode] = useState<ThemeMode>("system")
+  const [theme, setTheme] = useState<Theme>("light")
 
+  // The inline script in `__root.tsx` has already resolved the theme onto the
+  // document, so read it back rather than resolving it a second time.
   useEffect(() => {
-    const initialMode = getStoredMode()
-    setMode(initialMode)
-    applyTheme(initialMode)
+    setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light")
   }, [])
 
   useEffect(() => {
-    if (mode !== "system") return undefined
-
     const media = window.matchMedia("(prefers-color-scheme: dark)")
-    const handleChange = () => applyTheme("system")
-    media.addEventListener("change", handleChange)
-    return () => media.removeEventListener("change", handleChange)
-  }, [mode])
+    const follow = () => {
+      if (storedTheme() != null) return
 
-  function selectMode(next: string) {
-    if (!isThemeMode(next)) return
+      const next = systemTheme()
+      setTheme(next)
+      applyTheme(next)
+    }
 
-    setMode(next)
-    applyTheme(next)
-    window.localStorage.setItem("theme", next)
-  }
+    media.addEventListener("change", follow)
+    return () => media.removeEventListener("change", follow)
+  }, [])
 
-  const Icon = THEME_MODES.find((entry) => entry.mode === mode)?.icon ?? RiComputerLine
+  const toggle = useCallback(() => {
+    const next: Theme = theme === "dark" ? "light" : "dark"
+
+    withThemeTransition(() => {
+      // The browser snapshots the DOM the moment this callback returns, so the
+      // icon swap has to land in the same frame as the palette swap.
+      flushSync(() => setTheme(next))
+      applyTheme(next)
+    })
+    storeTheme(next)
+  }, [theme])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== TOGGLE_KEY) return
+      if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return
+
+      event.preventDefault()
+      toggle()
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [toggle])
+
+  const Icon = theme === "dark" ? RiMoonLine : RiSunLine
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
+    <Tooltip>
+      <TooltipTrigger
         render={
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={`Theme: ${mode}. Change theme`}
+            onClick={toggle}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            aria-keyshortcuts={TOGGLE_KEY}
             className={cn("text-muted-foreground w-11 sm:w-8", MOBILE_TOUCH_TARGET_CLASS)}
           >
-            <Icon aria-hidden="true" strokeWidth={1.75} />
+            <Icon aria-hidden="true" />
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="min-w-36">
-        <DropdownMenuRadioGroup value={mode} onValueChange={selectMode}>
-          {THEME_MODES.map(({ mode: value, label, icon: ModeIcon }) => (
-            <DropdownMenuRadioItem key={value} value={value} className={MOBILE_TOUCH_TARGET_CLASS}>
-              <ModeIcon aria-hidden="true" strokeWidth={1.75} />
-              {label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <TooltipContent>
+        Toggle theme <kbd className="text-muted-foreground ml-1">D</kbd>
+      </TooltipContent>
+    </Tooltip>
   )
 }

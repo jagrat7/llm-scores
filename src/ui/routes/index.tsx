@@ -160,7 +160,7 @@ function ComparePage() {
             models={data.models}
             selected={selected}
             onChange={(models) => updateSearch({ models })}
-            align="center"
+            className="mx-auto max-w-sm"
           />
         </DataState>
       ) : null}
@@ -170,7 +170,7 @@ function ComparePage() {
             models={data.models}
             selected={selected}
             onChange={(models) => updateSearch({ models })}
-            align="center"
+            className="mx-auto max-w-sm"
           />
         </DataState>
       ) : null}
