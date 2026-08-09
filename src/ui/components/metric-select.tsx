@@ -45,6 +45,7 @@ export function MetricSelect({
 }) {
   const isEmpty = value == null
   const label = isEmpty ? `Add ${axis} axis` : `${axis}-axis metric`
+  const metricLabel = value == null ? null : METRIC_CONFIG[value].shortLabel
 
   return (
     <ButtonGroup className={cn("w-full", className)}>
@@ -66,9 +67,7 @@ export function MetricSelect({
               Add {axis} axis
             </span>
           ) : (
-            <SelectValue className="text-foreground font-semibold">
-              {(selected: Metric) => METRIC_CONFIG[selected].shortLabel}
-            </SelectValue>
+            <SelectValue className="text-foreground font-semibold">{metricLabel}</SelectValue>
           )}
         </SelectTrigger>
         <SelectContent
