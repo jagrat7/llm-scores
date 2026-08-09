@@ -320,7 +320,14 @@ function PlotPoints({
           const bufferGeometry = new THREE.BufferGeometry()
           const attribute = new THREE.BufferAttribute(new Float32Array(series.points.length * 3), 3)
 
+          for (const [pointIndex, point] of series.points.entries()) {
+            const position = positions[point.index]
+
+            attribute.setXYZ(pointIndex, position.x, position.y, position.z * scene.current.depth)
+          }
+
           bufferGeometry.setAttribute("position", attribute)
+          bufferGeometry.computeBoundingSphere()
 
           const object = new THREE.Line(
             bufferGeometry,
@@ -331,11 +338,9 @@ function PlotPoints({
             }),
           )
 
-          object.visible = false
-
           return { series, object, attribute }
         }),
-    [data, resolveColor],
+    [data, positions, resolveColor, scene],
   )
   useEffect(
     () => () => {
