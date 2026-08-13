@@ -23,19 +23,15 @@ import {
 import { InputGroupAddon } from "#/ui/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "#/ui/components/ui/popover"
 import { Skeleton } from "#/ui/components/ui/skeleton"
-import {
-  CONTROL_META_TEXT_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-  PRIMARY_TOUCH_TARGET_CLASS,
-} from "#/ui/lib/interaction-styles"
 import { cn } from "#/ui/lib/utils"
 
 type DotStyle = CSSProperties & { "--dot": string }
 
 /**
  * Pack the picker's width with chips before collapsing the rest into a count —
- * empty space on the last row is worse than one more badge. Four rows at `sm:w-72`
- * still sits under the axis column, so the chart doesn't get pushed down.
+ * empty space on the last row is worse than one more badge. Three rows of chips
+ * lands the picker at the same height as the three axis rows opposite it, so
+ * neither side of the strip pushes the chart down on its own.
  */
 const VISIBLE_CHIP_LIMIT = 11
 
@@ -61,13 +57,6 @@ const SKELETON_CHIP_WIDTHS = [
   "w-32",
   "w-20",
 ]
-
-/**
- * Chip metrics, shared by the real chips, the overflow control and the skeletons.
- * Chips annotate the search bar rather than compete with it, so they sit on the
- * strip's meta step — the same one the `via` rows in the axis column hold.
- */
-const CHIP_METRICS_CLASS = `h-7 sm:h-[calc(--spacing(4.75))] ${CONTROL_META_TEXT_CLASS}`
 
 /**
  * Mirrors `ComboboxChip`'s surface. The overflow list is portalled outside
@@ -156,7 +145,7 @@ export function ModelPicker({
             placeholder="Search models"
             showTrigger={false}
             disabled={disabled}
-            className={cn("w-full", PRIMARY_TOUCH_TARGET_CLASS)}
+            className="min-h-11 w-full sm:min-h-9"
           >
             <InputGroupAddon align="inline-start">
               <RiSearchLine aria-hidden="true" className="text-muted-foreground size-3.5" />
@@ -168,7 +157,10 @@ export function ModelPicker({
             {SKELETON_CHIP_WIDTHS.map((width, index) => (
               <Skeleton
                 key={`${width}-${index}`}
-                className={cn("rounded-[calc(var(--radius-sm)-2px)]", CHIP_METRICS_CLASS, width)}
+                className={cn(
+                  "h-8 text-sm sm:h-6 sm:text-xs rounded-[calc(var(--radius-sm)-2px)]",
+                  width,
+                )}
               />
             ))}
           </div>
@@ -181,7 +173,7 @@ export function ModelPicker({
                   {/* Chips remove by render index, so they have to stay in value order —
                       taking the head keeps every visible chip pointing at its own model. */}
                   {shown.slice(0, VISIBLE_CHIP_LIMIT).map((model) => (
-                    <ComboboxChip key={model.model} className={CHIP_METRICS_CLASS}>
+                    <ComboboxChip key={model.model} className="h-8 text-sm sm:h-6 sm:text-xs">
                       <ModelDot model={model} />
                       {model.displayName}
                     </ComboboxChip>
@@ -199,7 +191,7 @@ export function ModelPicker({
                       variant="secondary"
                       size="sm"
                       aria-label={`Show ${hidden.length} more selected models`}
-                      className={CHIP_METRICS_CLASS}
+                      className="h-8 text-sm sm:h-6 sm:text-xs"
                     />
                   }
                 >
@@ -209,7 +201,10 @@ export function ModelPicker({
                 <PopoverContent align="start" className="w-56 p-2">
                   <ul className="flex flex-wrap gap-1">
                     {hidden.map((model) => (
-                      <li key={model.model} className={cn(CHIP_SURFACE_CLASS, CHIP_METRICS_CLASS)}>
+                      <li
+                        key={model.model}
+                        className={cn(CHIP_SURFACE_CLASS, "h-8 text-sm sm:h-6 sm:text-xs")}
+                      >
                         <ModelDot model={model} />
                         {model.displayName}
                         <Button
@@ -237,7 +232,7 @@ export function ModelPicker({
                 <ComboboxItem
                   key={model.model}
                   value={model}
-                  className={cn("group/mark", MOBILE_TOUCH_TARGET_CLASS)}
+                  className="group/mark min-h-11 text-sm sm:min-h-8"
                 >
                   <ModelLogo family={model.family} className="text-muted-foreground size-3.5" />
                   <span className="truncate">{model.displayName}</span>

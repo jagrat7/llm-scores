@@ -11,7 +11,6 @@ import { SourceSelect } from "#/ui/components/source-select"
 import { Button } from "#/ui/components/ui/button"
 import { Separator } from "#/ui/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
-import { CONTROL_META_TEXT_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRICS } from "#/ui/lib/metrics"
 import { cn } from "#/ui/lib/utils"
 
@@ -25,7 +24,7 @@ export type AxisSetting = { metric: Metric | null; source: ProviderName | null }
 export type AxisState = Record<AxisKey, AxisSetting>
 
 /** Ink and weight make the axis letters a structural spine; size keeps them under the metric. */
-const AXIS_LABEL_CLASS = `text-foreground ${CONTROL_META_TEXT_CLASS} font-semibold`
+const AXIS_LABEL_CLASS = "text-foreground text-sm sm:text-xs font-semibold"
 
 /**
  * A swap is a hinge between two adjacent rows, so each button spans both and
@@ -68,10 +67,14 @@ export function AxisControls({
   return (
     <div className="mx-auto mb-6 flex w-full max-w-lg flex-col gap-3 sm:max-w-3xl sm:flex-row sm:items-start sm:gap-4">
       {/* Every cell names its own column, so a row can drop its source mark and the
-          rail can carry letters and hinges at once. The metric track keeps a floor:
-          on a phone the attribution beside it would otherwise take the row and clip
-          the label the row exists to show. */}
-      <div className="grid flex-1 grid-cols-[--spacing(8)_minmax(--spacing(32),1fr)_minmax(0,auto)] items-center gap-x-2 gap-y-1.5">
+          rail can carry letters and hinges at once. Slack belongs to the source
+          column, not the metric one: metric names are short and fixed, provider
+          names are long and varied. Letting the metric track take the row instead
+          balloons three selects into the widest thing on the page — which is what
+          made the strip read as lopsided against the picker — while the attribution
+          that actually needs the room truncates. The metric floor stays, so on a
+          phone the source beside it can't squeeze out the label. */}
+      <div className="grid flex-1 grid-cols-[--spacing(6)_minmax(--spacing(32),--spacing(44))_minmax(0,1fr)] items-center gap-x-2 gap-y-1.5">
         {AXIS_KEYS.map((key, index) => {
           const { metric, source } = axes[key]
           const swap = SWAP_PAIRS.find((pair) => pair.from === key)
@@ -117,7 +120,7 @@ export function AxisControls({
         selected={selected}
         onChange={onSelectedChange}
         disabled={disabled}
-        className="sm:w-72"
+        className="sm:w-80"
       />
     </div>
   )
@@ -149,7 +152,7 @@ function SwapAxesButton({
             className={cn(
               "text-muted-foreground col-start-1 row-span-2 justify-self-end",
               rowStartClass,
-              MOBILE_TOUCH_TARGET_CLASS,
+              "min-h-11 sm:min-h-8",
             )}
           >
             <RiArrowUpDownLine aria-hidden="true" />

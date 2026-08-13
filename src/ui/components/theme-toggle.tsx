@@ -6,7 +6,6 @@ import type { Theme } from "#/ui/lib/theme"
 
 import { Button } from "#/ui/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
-import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import {
   applyTheme,
   storeTheme,
@@ -14,7 +13,6 @@ import {
   systemTheme,
   withThemeTransition,
 } from "#/ui/lib/theme"
-import { cn } from "#/ui/lib/utils"
 
 /** Bare letter, so it stays out of the way of every browser and OS shortcut. */
 const TOGGLE_KEY = "d"
@@ -84,7 +82,7 @@ export default function ThemeToggle() {
             onClick={toggle}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
             aria-keyshortcuts={TOGGLE_KEY}
-            className={cn("text-muted-foreground w-11 sm:w-8", MOBILE_TOUCH_TARGET_CLASS)}
+            className="text-muted-foreground min-h-11 w-11 sm:min-h-8 sm:w-8"
           >
             <Icon aria-hidden="true" />
           </Button>

@@ -12,11 +12,6 @@ import {
   SelectValue,
 } from "#/ui/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "#/ui/components/ui/tooltip"
-import {
-  CONTROL_CHIP_CLASS,
-  MOBILE_TOUCH_TARGET_CLASS,
-  PRIMARY_TOUCH_TARGET_CLASS,
-} from "#/ui/lib/interaction-styles"
 import { isMetric, METRICS, METRIC_CONFIG } from "#/ui/lib/metrics"
 import { cn } from "#/ui/lib/utils"
 
@@ -58,7 +53,10 @@ export function MetricSelect({
       >
         <SelectTrigger
           aria-label={label}
-          className={cn(CONTROL_CHIP_CLASS, isEmpty ? EMPTY_CHIP_CLASS : null)}
+          className={cn(
+            "text-muted-foreground w-full justify-between gap-2 px-3 text-sm shadow-none hover:bg-muted hover:text-foreground min-h-11 sm:min-h-9 w-full",
+            isEmpty ? EMPTY_CHIP_CLASS : null,
+          )}
         >
           <span className="sr-only">{label}</span>
           {isEmpty ? (
@@ -80,7 +78,7 @@ export function MetricSelect({
               key={metric}
               value={metric}
               disabled={unavailable.includes(metric)}
-              className={MOBILE_TOUCH_TARGET_CLASS}
+              className="min-h-11 text-sm sm:min-h-8"
             >
               {METRIC_CONFIG[metric].shortLabel}
             </SelectItem>
@@ -89,15 +87,18 @@ export function MetricSelect({
       </Select>
       {onRemove ? (
         <Tooltip>
+          {/* Shares the select's height, so it has to share its footprint too — at
+              `icon-sm` the button reads as a sliver welded to the side of the field
+              rather than the other half of one control. */}
           <TooltipTrigger
             render={
               <Button
                 variant="outline"
-                size="icon-sm"
+                size="icon-lg"
                 onClick={onRemove}
                 disabled={disabled}
                 aria-label={`Remove ${axis} axis and return to the 2D chart`}
-                className={cn("text-muted-foreground", PRIMARY_TOUCH_TARGET_CLASS)}
+                className="text-muted-foreground min-h-11 sm:min-h-9"
               >
                 <RiCloseLine aria-hidden="true" />
               </Button>

@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/ui/components/ui/select"
-import { CONTROL_META_TEXT_CLASS, MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { METRIC_CONFIG } from "#/ui/lib/metrics"
 import { isSource, sourceLabel } from "#/ui/lib/sources"
 import { cn } from "#/ui/lib/utils"
@@ -19,8 +18,7 @@ import { cn } from "#/ui/lib/utils"
  * inset belongs to what follows it, matching the select trigger's own `px-2`
  * so the marks line up whether the row is a control or plain attribution.
  */
-const VIA_ROW_CLASS = `text-muted-foreground flex items-center gap-1.5 ${CONTROL_META_TEXT_CLASS}`
-const VIA_CONTENT_CLASS = "flex items-center gap-1.5 truncate px-2"
+const VIA_ROW_CLASS = "text-muted-foreground text-sm sm:text-xs flex items-center gap-1.5"
 
 /**
  * A metric published by a single provider has no choice to offer, so it reads as
@@ -47,7 +45,7 @@ export function SourceSelect({
     return (
       <p className={cn(VIA_ROW_CLASS, className)}>
         <span aria-hidden="true">via</span>
-        <span className={cn(VIA_CONTENT_CLASS, MOBILE_TOUCH_TARGET_CLASS)}>
+        <span className="min-h-11 sm:min-h-8 flex items-center gap-1.5 truncate px-2">
           <SourceLogo source={value} className="size-3" accent />
           <span className="truncate">{sourceLabel(value)}</span>
         </span>
@@ -68,11 +66,7 @@ export function SourceSelect({
         <SelectTrigger
           size="sm"
           aria-label={`${axis}-axis data source`}
-          className={cn(
-            "text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground min-w-0 gap-1.5 border-transparent bg-transparent px-2 shadow-none",
-            CONTROL_META_TEXT_CLASS,
-            MOBILE_TOUCH_TARGET_CLASS,
-          )}
+          className="text-muted-foreground hover:border-input hover:bg-muted hover:text-foreground min-h-11 min-w-0 gap-1.5 border-transparent bg-transparent px-2 text-sm shadow-none sm:min-h-8 sm:text-xs"
         >
           {/* Base UI resolves the label from the raw value, so the mark is rendered here. */}
           {/* The trigger lays the value out as a flex row, which kills the registry's
@@ -91,8 +85,14 @@ export function SourceSelect({
           align="start"
           className="duration-200 ease-out motion-reduce:animate-none"
         >
+          {/* A menu that reads louder than the trigger that opened it inverts the
+              hierarchy, so the items ride the same annotation step. */}
           {sources.map((source) => (
-            <SelectItem key={source} value={source} className={MOBILE_TOUCH_TARGET_CLASS}>
+            <SelectItem
+              key={source}
+              value={source}
+              className="min-h-11 text-sm sm:min-h-8 sm:text-xs"
+            >
               <SourceLogo source={source} className="size-3" />
               {sourceLabel(source)}
             </SelectItem>

@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router"
 
 import { APP_NAME } from "#/ui/lib/app-meta"
-import { MOBILE_TOUCH_TARGET_CLASS } from "#/ui/lib/interaction-styles"
 import { CONTENT_WIDTH_CLASS, HEADER_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
 import { cn } from "#/ui/lib/utils"
 
@@ -52,10 +51,7 @@ export default function AppHeader() {
           to="/"
           search={{ x: "cost", y: "score" }}
           aria-label={`${APP_NAME} home`}
-          className={cn(
-            "group/mark text-foreground -ml-1 flex items-center gap-2 rounded-md px-1 text-sm font-medium tracking-tight no-underline",
-            MOBILE_TOUCH_TARGET_CLASS,
-          )}
+          className="group/mark text-foreground -ml-1 flex min-h-11 items-center gap-2 rounded-md px-1 text-sm font-medium tracking-tight no-underline sm:min-h-8"
         >
           <AppMark />
           <span>{APP_NAME}</span>

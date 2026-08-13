@@ -59,9 +59,7 @@ function renderModelCell({ row, getValue }: { row: { original: Model }; getValue
         <div className="truncate">
           <span className="text-foreground font-medium">{getValue()}</span>
           {effortLabel ? (
-            <span className="text-muted-foreground ml-1.5 text-sm sm:text-xs">
-              {effortLabel.trim()}
-            </span>
+            <span className="text-muted-foreground ml-1.5">{effortLabel.trim()}</span>
           ) : null}
         </div>
       </TooltipTrigger>
@@ -98,7 +96,7 @@ function renderSourceCell({ row }: { row: { original: Model } }) {
 
   if (sources.length === 0) {
     return (
-      <span aria-label="No source available" className="text-muted-foreground text-sm sm:text-xs">
+      <span aria-label="No source available" className="text-muted-foreground">
         —
       </span>
     )
@@ -112,7 +110,7 @@ function renderSourceCell({ row }: { row: { original: Model } }) {
         render={
           <span
             aria-label={label}
-            className="text-muted-foreground inline-flex items-center justify-end gap-1.5 text-sm sm:text-xs"
+            className="text-muted-foreground inline-flex items-center justify-end gap-1.5"
           />
         }
       >
@@ -172,7 +170,7 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
     <Table
       data-table-frame="loaded"
       containerClassName="border-border border-y lg:overflow-x-visible"
-      className={`${TABLE_WIDTH_CLASS} border-collapse text-left tabular-nums`}
+      className={`${TABLE_WIDTH_CLASS} border-collapse text-left text-sm tabular-nums sm:text-xs`}
     >
       <TableHeader className={`bg-background ${BELOW_HEADER_OFFSET_CLASS} lg:sticky lg:z-20`}>
         {table.getHeaderGroups().map((headerGroup) => (
@@ -202,7 +200,7 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
                           : undefined
                   }
                   className={cn(
-                    "text-muted-foreground h-11 px-3 sm:h-10 sm:text-xs",
+                    "text-muted-foreground h-11 px-3 sm:h-10",
                     rightAligned ? "text-right" : null,
                     index === 0 ? cn(STICKY_COLUMN_CLASS, "z-30") : null,
                   )}
@@ -213,7 +211,7 @@ export function LeaderboardTable({ models }: { models: Array<Model> }) {
                       size="sm"
                       onClick={header.column.getToggleSortingHandler()}
                       className={cn(
-                        "-mx-2 min-h-11 px-2 font-medium sm:min-h-8",
+                        "min-h-11 sm:min-h-8 -mx-2 px-2 font-medium",
                         rightAligned ? "ml-auto" : null,
                         sorted ? "text-foreground" : "text-muted-foreground",
                       )}

@@ -1,7 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
+@import "./typeset.css";
 @plugin '@tailwindcss/typography';
 @import "tw-animate-css";
+
+.typeset-notes {
+  --typeset-font-body: var(--font-sans);
+  --typeset-font-heading: var(--font-sans);
+  --typeset-font-mono: var(--font-mono);
+  --typeset-size: 15px;
+  --typeset-leading: 1.6;
+  --typeset-flow: 1em;
+}
 
 @custom-variant dark (&:is(.dark *));
 
