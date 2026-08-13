@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react"
 import type { Metric } from "#/ui/lib/metrics"
 import type { Model, ProviderName } from "#/ui/lib/orpc-client"
 import type { PlotData, PlotPoint } from "#/ui/lib/comparison-plot-data"
+import type { SeriesLabel } from "#/ui/lib/plot-labels"
 
 import { DataState } from "#/ui/components/data-state"
 import { PointDetails } from "#/ui/components/point-details"
@@ -18,7 +19,6 @@ import {
   CHART_EASE,
   CHART_GRID_MINOR_OPACITY,
   CHART_GRID_OPACITY,
-  CHART_POINT_LABEL_SIZE,
   CHART_TICK_SIZE,
   CHART_TOOLTIP_CLASS,
   CHART_TOOLTIP_GAP,
@@ -27,11 +27,27 @@ import {
 import { buildPlotData, describePlot, padDomain } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric, metricAxisTitle, METRIC_CONFIG } from "#/ui/lib/metrics"
+import {
+  labelBlockSize,
+  LABEL_COLLISION_GAP,
+  LABEL_EFFORT_SIZE,
+  LABEL_LINE_GAP,
+  LABEL_NAME_SIZE,
+  LABEL_PIN_GAP,
+  seriesLabelCandidates,
+} from "#/ui/lib/plot-labels"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
 
 type Position = { x: number; y: number }
 
-type LabelPlacement = Position & { anchor: "middle"; visible: boolean }
+type LabelSide = "right" | "left" | "top" | "bottom"
+
+type PlacedLabel = SeriesLabel & {
+  x: number
+  nameY: number
+  effortY: number
+  anchor: "start" | "middle" | "end"
+}
 
 const MARGIN = { top: 26, right: 30, bottom: 54, left: 74 }
 const DOMAIN_PAD = 0.08
@@ -39,12 +55,12 @@ const POINT_RADIUS = 5
 const ACTIVE_POINT_RADIUS = POINT_RADIUS * CHART_ACTIVE_SCALE
 /** Pointer distance at which the nearest point stops being considered hovered. */
 const HOVER_RADIUS = 110
-const LABEL_FONT_SIZE = CHART_POINT_LABEL_SIZE
-/** Average glyph width as a share of the font size — enough to reserve label boxes. */
-const LABEL_WIDTH_RATIO = 0.56
-const LABEL_OFFSET = 13
-const LABEL_GAP = 4
 const LABEL_MIN_WIDTH = 720
+/** Sides tried per label; the run's alternating placement picks which order it uses. */
+const LABEL_SIDES_TOP: ReadonlyArray<LabelSide> = ["right", "left", "top", "bottom"]
+const LABEL_SIDES_BOTTOM: ReadonlyArray<LabelSide> = ["left", "right", "bottom", "top"]
+/** Tried in order; the wider gaps only matter once every effort of a run is boxed in. */
+const LABEL_GAP_STEPS = [LABEL_PIN_GAP, LABEL_PIN_GAP + 12, LABEL_PIN_GAP + 26]
 const AXIS_TICK_PROPS = {
   fill: "var(--muted-foreground)",
   fontSize: CHART_TICK_SIZE,
@@ -73,10 +89,48 @@ function seriesPath(points: Array<PlotPoint>, positions: Map<string, Position>) 
     .join(" ")
 }
 
+type LabelBox = { left: number; right: number; top: number; bottom: number }
+
+function overlaps(box: LabelBox, taken: Array<LabelBox>) {
+  return taken.some(
+    (other) =>
+      box.left < other.right + LABEL_COLLISION_GAP &&
+      box.right > other.left - LABEL_COLLISION_GAP &&
+      box.top < other.bottom + LABEL_COLLISION_GAP &&
+      box.bottom > other.top - LABEL_COLLISION_GAP,
+  )
+}
+
+/** Block geometry for one candidate side at `gap` pixels out from the anchor dot. */
+function labelBox(
+  side: LabelSide,
+  anchor: Position,
+  size: { width: number; height: number },
+  gap: number,
+): LabelBox {
+  const half = size.width / 2
+
+  if (side === "right" || side === "left") {
+    const left = side === "right" ? anchor.x + gap : anchor.x - gap - size.width
+
+    return {
+      left,
+      right: left + size.width,
+      top: anchor.y - size.height / 2,
+      bottom: anchor.y + size.height / 2,
+    }
+  }
+
+  const top = side === "top" ? anchor.y - gap - size.height : anchor.y + gap
+
+  return { left: anchor.x - half, right: anchor.x + half, top, bottom: top + size.height }
+}
+
 /**
- * Greedy label placement in plot space. Points come in score order, so the strongest
- * models win a label and weaker overlaps are dropped. Boxes are estimated from the
- * glyph ratio rather than measured, which keeps this out of the DOM entirely.
+ * One label per model, pinned beside a point of its run. Candidates are searched effort
+ * first: all four sides of every effort at the tight pin gap, then the same sweep further
+ * out for models with only one effort to give. Every model keeps a label — the last resort
+ * is the first candidate, overlap and all — since a nameless dot reads as a bug.
  */
 function placeLabels(
   data: PlotData,
@@ -84,62 +138,58 @@ function placeLabels(
   innerWidth: number,
   innerHeight: number,
 ) {
-  const placements = new Map<string, LabelPlacement>()
+  const placed: Array<PlacedLabel> = []
 
-  if (innerWidth < LABEL_MIN_WIDTH) return placements
+  if (innerWidth < LABEL_MIN_WIDTH) return placed
 
-  const preferred = new Map<string, "top" | "bottom">()
+  // Dots are seeded as occupied so a name never lands on another model's marker.
+  const taken: Array<LabelBox> = Array.from(positions.values(), (position) => ({
+    left: position.x - POINT_RADIUS,
+    right: position.x + POINT_RADIUS,
+    top: position.y - POINT_RADIUS,
+    bottom: position.y + POINT_RADIUS,
+  }))
 
   for (const series of data.series) {
-    for (const point of series.points) preferred.set(point.id, series.labelPlacement)
+    const sides = series.labelPlacement === "top" ? LABEL_SIDES_TOP : LABEL_SIDES_BOTTOM
+    const anchors = seriesLabelCandidates(series).flatMap((label) => {
+      const anchor = positions.get(label.pointId)
+
+      return anchor ? [{ label, anchor, size: labelBlockSize(label) }] : []
+    })
+    // Gap is the outer loop, so a label hops every effort level before it drifts outward.
+    const candidates = LABEL_GAP_STEPS.flatMap((gap) =>
+      anchors.flatMap(({ label, anchor, size }) =>
+        sides.map((side) => ({ label, side, box: labelBox(side, anchor, size, gap) })),
+      ),
+    )
+    const fits = ({ box }: { box: LabelBox }) =>
+      box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight
+    const chosen =
+      candidates.find((candidate) => fits(candidate) && !overlaps(candidate.box, taken)) ??
+      candidates.find(fits) ??
+      candidates[0]
+
+    if (!chosen) continue
+
+    taken.push(chosen.box)
+    const nameY = chosen.box.top + LABEL_NAME_SIZE
+
+    placed.push({
+      ...chosen.label,
+      x:
+        chosen.side === "right"
+          ? chosen.box.left
+          : chosen.side === "left"
+            ? chosen.box.right
+            : (chosen.box.left + chosen.box.right) / 2,
+      nameY,
+      effortY: nameY + LABEL_LINE_GAP + LABEL_EFFORT_SIZE,
+      anchor: chosen.side === "right" ? "start" : chosen.side === "left" ? "end" : "middle",
+    })
   }
 
-  const taken: Array<{ left: number; right: number; top: number; bottom: number }> = []
-
-  for (const point of data.points) {
-    const position = positions.get(point.id)
-
-    if (!position) continue
-
-    const width = point.label.length * LABEL_FONT_SIZE * LABEL_WIDTH_RATIO
-    const half = width / 2
-    const centerX = clamp(position.x, half + 2, Math.max(half + 2, innerWidth - half - 2))
-    const first = preferred.get(point.id) ?? "top"
-    const order: Array<"top" | "bottom"> = first === "top" ? ["top", "bottom"] : ["bottom", "top"]
-    let placed = false
-
-    for (const side of order) {
-      const baseline =
-        side === "top" ? position.y - LABEL_OFFSET : position.y + LABEL_OFFSET + LABEL_FONT_SIZE
-      const box = {
-        left: centerX - half,
-        right: centerX + half,
-        top: baseline - LABEL_FONT_SIZE,
-        bottom: baseline + 2,
-      }
-
-      if (box.top < 0 || box.bottom > innerHeight) continue
-
-      const collides = taken.some(
-        (other) =>
-          box.left < other.right + LABEL_GAP &&
-          box.right > other.left - LABEL_GAP &&
-          box.top < other.bottom + LABEL_GAP &&
-          box.bottom > other.top - LABEL_GAP,
-      )
-
-      if (collides) continue
-
-      taken.push(box)
-      placements.set(point.id, { x: centerX, y: baseline, anchor: "middle", visible: true })
-      placed = true
-      break
-    }
-
-    if (!placed) placements.set(point.id, { ...position, anchor: "middle", visible: false })
-  }
-
-  return placements
+  return placed
 }
 
 export function ComparisonChart({
@@ -382,32 +432,40 @@ export function ComparisonChart({
             ) : null}
 
             <g aria-hidden="true">
-              {data.points.map((point) => {
-                const placement = layout.labels.get(point.id)
-
-                if (!placement) return null
-
-                const active = point.id === activeId
-
-                return (
+              {layout.labels.map((label) => (
+                <g
+                  key={label.key}
+                  opacity={activeId == null || label.ids.has(activeId) ? 1 : 0.35}
+                  stroke="var(--background)"
+                  strokeWidth={3}
+                  paintOrder="stroke"
+                  style={{ transition: reduceMotion ? undefined : "opacity 200ms ease-out" }}
+                >
                   <text
-                    key={point.id}
-                    x={placement.x}
-                    y={placement.y}
-                    textAnchor={placement.anchor}
-                    fontSize={LABEL_FONT_SIZE}
-                    fontWeight={active ? 600 : 500}
-                    fill="var(--foreground)"
-                    stroke="var(--background)"
-                    strokeWidth={3}
-                    paintOrder="stroke"
-                    opacity={placement.visible ? (activeId == null || active ? 1 : 0.35) : 0}
-                    style={{ transition: reduceMotion ? undefined : "opacity 200ms ease-out" }}
+                    x={label.x}
+                    y={label.nameY}
+                    textAnchor={label.anchor}
+                    fontSize={LABEL_NAME_SIZE}
+                    fontWeight={600}
+                    fill={label.color}
                   >
-                    {point.label}
+                    {label.name}
                   </text>
-                )
-              })}
+                  {label.effort ? (
+                    <text
+                      x={label.x}
+                      y={label.effortY}
+                      textAnchor={label.anchor}
+                      fontSize={LABEL_EFFORT_SIZE}
+                      fontWeight={500}
+                      letterSpacing={0.4}
+                      fill="var(--muted-foreground)"
+                    >
+                      {label.effort}
+                    </text>
+                  ) : null}
+                </g>
+              ))}
             </g>
 
             <AxisLeft

@@ -123,6 +123,22 @@ describe("buildPlotData", () => {
     expect(data.series[0].points.map((point) => point.label)).toEqual(["a", "a [high]"])
   })
 
+  it("anchors the label at high when offered, otherwise at the top effort", () => {
+    const data = buildPlotData(
+      [
+        makeModel({ model: "a", effort: "low", effortOrder: 1 }),
+        makeModel({ model: "a", effort: "high", effortOrder: 3 }),
+        makeModel({ model: "a", effort: "max", effortOrder: 5 }),
+        makeModel({ model: "b", effort: "medium", effortOrder: 2 }),
+        makeModel({ model: "b", effort: "xhigh", effortOrder: 4 }),
+        makeModel({ model: "c" }),
+      ],
+      XY,
+    )
+
+    expect(data.series.map((series) => series.anchorId)).toEqual(["a-high", "b-xhigh", "c-default"])
+  })
+
   it("alternates label placement between series of the same family", () => {
     const data = buildPlotData(
       [

@@ -15,7 +15,6 @@ import {
   CHART_ACTIVE_SCALE,
   CHART_AXIS_TITLE_SIZE,
   CHART_GRID_OPACITY,
-  CHART_POINT_LABEL_SIZE,
   CHART_TICK_SIZE,
   CHART_TOOLTIP_CLASS,
   CHART_TOOLTIP_GAP,
@@ -25,6 +24,12 @@ import {
 import { axisTicks, buildPlotData, describePlot } from "#/ui/lib/comparison-plot-data"
 import { CHART_HEIGHT_CLASS } from "#/ui/lib/layout-styles"
 import { formatMetric, metricAxisTitle, METRIC_CONFIG } from "#/ui/lib/metrics"
+import {
+  buildSeriesLabels,
+  LABEL_COLLISION_GAP,
+  LABEL_EFFORT_SIZE,
+  LABEL_NAME_SIZE,
+} from "#/ui/lib/plot-labels"
 import { useThemeColors } from "#/ui/lib/theme-colors"
 import { cn } from "#/ui/lib/utils"
 import { useReducedMotion } from "#/ui/lib/use-reduced-motion"
@@ -40,6 +45,9 @@ type SphericalView = { yaw: number; pitch: number; radius: number }
 type LabelItem = {
   key: string
   text: string
+  /** Effort tier drawn under a point label's model name; null for axis furniture. */
+  effort?: string | null
+  color?: string
   kind: "axis" | "tick" | "point"
   /** Fixed world anchor; points carry one, axis labels resolve theirs per frame. */
   base?: THREE.Vector3
@@ -47,6 +55,8 @@ type LabelItem = {
   axis?: PlotAxis
   fraction?: number
   pointId?: string
+  /** Every effort variant of the labelled model, so hovering any of them lights it. */
+  pointIds?: Set<string>
   fadeWithDepth?: boolean
   /** Pixels to push the label perpendicular to its axis, away from the cube. */
   screenOffset?: number
@@ -84,7 +94,7 @@ const TICK_TARGET = 6
 const LABEL_SIZES: Record<LabelItem["kind"], number> = {
   axis: CHART_AXIS_TITLE_SIZE,
   tick: CHART_TICK_SIZE,
-  point: CHART_POINT_LABEL_SIZE,
+  point: LABEL_NAME_SIZE,
 }
 /**
  * Label distances are pixels, not world units. A world-space offset is scaled by
@@ -94,7 +104,6 @@ const LABEL_SIZES: Record<LabelItem["kind"], number> = {
 const TICK_LABEL_PIXELS = 20
 const AXIS_TITLE_PIXELS = 54
 const POINT_LABEL_MIN_WIDTH = 640
-const LABEL_GAP = 4
 /** Lifts the card so it sits beside the point rather than under the cursor. */
 const TOOLTIP_RISE = 56
 const TOOLTIP_SAFE_BOTTOM = 190
@@ -747,7 +756,7 @@ function LabelProjector({
       const upright = Math.abs(entry.angle) < 45
       const labelWidth = upright ? measuredWidth : measuredHeight
       const labelHeight = upright ? measuredHeight : measuredWidth
-      const isActive = entry.item.pointId != null && entry.item.pointId === activeId
+      const isActive = activeId != null && (entry.item.pointIds?.has(activeId) ?? false)
       const box = {
         left: entry.screenX - labelWidth / 2,
         right: entry.screenX + labelWidth / 2,
@@ -760,10 +769,10 @@ function LabelProjector({
         !isActive &&
         placed.some(
           (other) =>
-            box.left < other.right + LABEL_GAP &&
-            box.right > other.left - LABEL_GAP &&
-            box.top < other.bottom + LABEL_GAP &&
-            box.bottom > other.top - LABEL_GAP,
+            box.left < other.right + LABEL_COLLISION_GAP &&
+            box.right > other.left - LABEL_COLLISION_GAP &&
+            box.top < other.bottom + LABEL_COLLISION_GAP &&
+            box.bottom > other.top - LABEL_COLLISION_GAP,
         )
       const visible = !offscreen && !collides
       const opacity = entry.item.fadeWithDepth ? depth : 1
@@ -919,13 +928,21 @@ export function ComparisonChart3D({
     }
 
     if (showPointLabels) {
-      for (const point of data.points) {
+      // One name per model, pinned to the same anchor effort the 2D chart labels.
+      for (const label of buildSeriesLabels(data)) {
+        const anchor = data.pointById.get(label.pointId)
+
+        if (!anchor) continue
+
         items.push({
-          key: `point-${point.id}`,
-          text: point.label,
+          key: `point-${label.key}`,
+          text: label.name,
+          effort: label.effort,
+          color: label.color,
           kind: "point",
-          base: positions[point.index].clone().setY(positions[point.index].y + 0.11),
-          pointId: point.id,
+          base: positions[anchor.index].clone().setY(positions[anchor.index].y + 0.11),
+          pointId: label.pointId,
+          pointIds: label.ids,
         })
       }
     }
@@ -1014,7 +1031,7 @@ export function ComparisonChart3D({
           </Button>
         ))}
       </div>
-      <p className="text-muted-foreground pointer-events-none absolute bottom-3 left-3 z-20 hidden items-center gap-1.5 text-xs sm:flex">
+      <p className="text-muted-foreground pointer-events-none absolute right-3 bottom-3 z-20 hidden items-center gap-1.5 text-xs sm:flex">
         <RiDragMove2Line aria-hidden="true" className="size-3.5" />
         Drag to rotate · scroll to zoom
       </p>
@@ -1113,19 +1130,28 @@ export function ComparisonChart3D({
                   ref={(node) => {
                     labelNodes.current[index] = node
                   }}
-                  className={`absolute top-0 left-0 whitespace-nowrap opacity-0 will-change-transform ${
+                  className={`absolute top-0 left-0 text-center whitespace-nowrap opacity-0 will-change-transform ${
                     item.kind === "point"
-                      ? "text-foreground font-medium data-[active=true]:font-semibold"
+                      ? "font-semibold"
                       : item.kind === "axis"
                         ? "text-muted-foreground font-medium"
                         : "text-muted-foreground tabular-nums"
                   }`}
                   style={{
+                    color: item.color,
                     fontSize: chartFontRem(LABEL_SIZES[item.kind]),
                     textShadow: `0 0 3px ${colors.background}, 0 0 3px ${colors.background}, 0 0 6px ${colors.background}`,
                   }}
                 >
                   {item.text}
+                  {item.effort ? (
+                    <span
+                      className="text-muted-foreground block font-medium tracking-wide"
+                      style={{ fontSize: chartFontRem(LABEL_EFFORT_SIZE) }}
+                    >
+                      {item.effort}
+                    </span>
+                  ) : null}
                 </div>
               ))}
             </div>

@@ -29,8 +29,12 @@ export type PlotPoint = {
 /** Effort variants of one model, drawn as a connected run. */
 export type PlotSeries = {
   key: string
+  /** Model name, drawn once for the whole run instead of on every point. */
+  label: string
   color: string
   labelPlacement: "top" | "bottom"
+  /** The one point that carries the model name; see `anchorPoint`. */
+  anchorId: string
   points: Array<PlotPoint>
 }
 
@@ -57,6 +61,23 @@ function metricValue(model: Model, metric: Metric) {
   const value = model[METRIC_CONFIG[metric].dataKey]
 
   return typeof value === "number" && Number.isFinite(value) ? value : null
+}
+
+/** The effort every model is labelled at when it offers one, so runs read alike. */
+const ANCHOR_EFFORT = "high"
+
+/**
+ * One point per run carries the name: the shared `high` tier when the model exposes it,
+ * otherwise its top effort. Keeping the rule here is what makes single-effort models and
+ * full runs annotate the same way in both renderers.
+ */
+function anchorPoint(points: Array<PlotPoint>) {
+  return points.reduce((best, point) => {
+    if (best.model.effort === ANCHOR_EFFORT) return best
+    if (point.model.effort === ANCHOR_EFFORT) return point
+
+    return point.model.effortOrder > best.model.effortOrder ? point : best
+  })
 }
 
 function pointLabel(model: Model) {
@@ -168,8 +189,10 @@ export function buildPlotData(models: Array<Model>, metrics: PlotMetrics): PlotD
     else {
       seriesByModel.set(model.model, {
         key: model.model,
+        label: model.displayName,
         color: model.chartColor,
         labelPlacement: "top",
+        anchorId: point.id,
         points: [point],
       })
     }
@@ -194,6 +217,7 @@ export function buildPlotData(models: Array<Model>, metrics: PlotMetrics): PlotD
     familyOccurrences.set(family, occurrence + 1)
     modelSeries.labelPlacement = occurrence % 2 === 0 ? "top" : "bottom"
     modelSeries.points.sort((left, right) => left.model.effortOrder - right.model.effortOrder)
+    modelSeries.anchorId = anchorPoint(modelSeries.points).id
 
     return modelSeries
   })
